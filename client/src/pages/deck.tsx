@@ -173,6 +173,39 @@ export default function DeckPage() {
     a.click();
   };
 
+  const handleCardSelect = (card: ScryfallCard) => {
+    if (!deck) {
+      if (!name.trim()) {
+        toast({
+          title: "Name Required",
+          description: "Please name your deck before adding cards.",
+          variant: "destructive"
+        });
+        return;
+      }
+      return;
+    }
+    const transformedCard = transformScryfallCard(card);
+    updateDeck.mutate({
+      cards: [...deck.cards, transformedCard]
+    });
+  };
+
+  // Calculate total prices for the deck
+  const calculateTotalPrices = () => {
+    if (!deck) return { tcgplayer: 0, cardkingdom: 0 };
+
+    return [...deck.cards, ...deck.pickedUpCards].reduce(
+      (totals, card) => ({
+        tcgplayer: totals.tcgplayer + (card.prices.tcgplayer || 0),
+        cardkingdom: totals.cardkingdom + (card.prices.cardkingdom || 0),
+      }),
+      { tcgplayer: 0, cardkingdom: 0 }
+    );
+  };
+
+  const { tcgplayer: totalTcg, cardkingdom: totalCk } = calculateTotalPrices();
+
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 min-h-screen">
       <div className="space-y-4">
@@ -238,13 +271,7 @@ export default function DeckPage() {
       <div className="mt-8 grid gap-8 lg:grid-cols-2">
         <div className="order-2 lg:order-1">
           <CardSearch
-            onCardSelect={(card) => {
-              if (!deck) return;
-              const transformedCard = transformScryfallCard(card);
-              updateDeck.mutate({
-                cards: [...deck.cards, transformedCard]
-              });
-            }}
+            onCardSelect={handleCardSelect}
           />
         </div>
 
@@ -254,6 +281,7 @@ export default function DeckPage() {
             pickedUpCards={deck?.pickedUpCards || []}
             onCardMove={handleCardMove}
             format={deck?.format}
+            totalPrices={{ tcgplayer: totalTcg, cardkingdom: totalCk }}
           />
         </div>
       </div>
