@@ -4,17 +4,39 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface DeckListProps {
   cards: DeckCard[];
   pickedUpCards: DeckCard[];
   onCardMove: (card: DeckCard, toPickedUp: boolean) => void;
   format?: string;
+  totalPrices: {
+    tcgplayer: number;
+    cardkingdom: number;
+  };
 }
 
-export function DeckList({ cards, pickedUpCards, onCardMove, format }: DeckListProps) {
+export function DeckList({ cards, pickedUpCards, onCardMove, format, totalPrices }: DeckListProps) {
   const [selectedCard, setSelectedCard] = useState<DeckCard | null>(null);
   const [selectedSet, setSelectedSet] = useState<string | null>(null);
+
+  const PriceFooter = () => (
+    <Card className="mt-4">
+      <CardContent className="p-4">
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <span className="text-sm font-medium">TCGplayer Total:</span>
+            <span className="text-lg font-bold">${totalPrices.tcgplayer.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm font-medium">Card Kingdom Total:</span>
+            <span className="text-lg font-bold">${totalPrices.cardkingdom.toFixed(2)}</span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="space-y-6">
@@ -51,6 +73,8 @@ export function DeckList({ cards, pickedUpCards, onCardMove, format }: DeckListP
             ))}
           </ScrollArea>
         </div>
+
+        <PriceFooter />
       </div>
 
       {/* Mobile View */}
@@ -65,7 +89,7 @@ export function DeckList({ cards, pickedUpCards, onCardMove, format }: DeckListP
             </TabsTrigger>
           </TabsList>
           <TabsContent value="deck" className="mt-4">
-            <ScrollArea className="h-[calc(100vh-12rem)] px-1">
+            <ScrollArea className="h-[calc(100vh-16rem)] px-1">
               {cards.map((card) => (
                 <CardRow
                   key={card.id}
@@ -79,7 +103,7 @@ export function DeckList({ cards, pickedUpCards, onCardMove, format }: DeckListP
             </ScrollArea>
           </TabsContent>
           <TabsContent value="picked" className="mt-4">
-            <ScrollArea className="h-[calc(100vh-12rem)] px-1">
+            <ScrollArea className="h-[calc(100vh-16rem)] px-1">
               {pickedUpCards.map((card) => (
                 <CardRow
                   key={card.id}
@@ -93,6 +117,8 @@ export function DeckList({ cards, pickedUpCards, onCardMove, format }: DeckListP
             </ScrollArea>
           </TabsContent>
         </Tabs>
+
+        <PriceFooter />
       </div>
 
       <Dialog open={!!selectedCard} onOpenChange={() => setSelectedCard(null)}>
