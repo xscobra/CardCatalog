@@ -5,12 +5,18 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import { PrintingsDialog } from "./printings-dialog";
 import { SetSymbolsDialog } from "./set-symbols-dialog";
-import { Search, Layers } from "lucide-react";
+import { Search, Layers, MoreVertical } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface CardRowProps {
   card: DeckCard;
@@ -32,48 +38,78 @@ export function CardRow({ card, onRemove, onSetClick, onCardClick }: CardRowProp
       exit={{ opacity: 0 }}
     >
       <Card className="mb-2">
-        <CardContent className="p-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            {card.imageUrl && (
-              <img
-                src={card.imageUrl}
-                alt={card.name}
-                className="w-12 h-12 object-cover rounded cursor-pointer"
-                onClick={() => setShowImage(true)}
-              />
-            )}
-            <span className="font-medium">{card.name}</span>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowSets(true)}
-                className="gap-2"
-              >
-                <Layers className="h-4 w-4" />
-                Sets
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowPrintings(true)}
-              >
-                <Search className="h-4 w-4" />
-              </Button>
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="flex items-center gap-4 flex-1">
+              {card.imageUrl && (
+                <img
+                  src={card.imageUrl}
+                  alt={card.name}
+                  className="w-12 h-12 object-cover rounded cursor-pointer"
+                  onClick={() => setShowImage(true)}
+                />
+              )}
+              <span className="font-medium flex-1">{card.name}</span>
             </div>
 
-            <div className="text-sm flex items-center space-x-2">
-              <span>TCG: ${card.prices.tcgplayer?.toFixed(2) || "N/A"}</span>
-              <span className="text-muted-foreground">|</span>
-              <span>CK: ${card.prices.cardkingdom?.toFixed(2) || "N/A"}</span>
-            </div>
+            <div className="flex items-center justify-between sm:justify-end gap-4 mt-2 sm:mt-0">
+              {/* Mobile view */}
+              <div className="flex sm:hidden items-center gap-2">
+                <span className="text-sm">
+                  ${card.prices.tcgplayer?.toFixed(2) || "N/A"}
+                </span>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setShowSets(true)}>
+                      View Sets
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setShowPrintings(true)}>
+                      View Printings
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={onRemove} className="text-destructive">
+                      Remove
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
 
-            <Button variant="destructive" size="sm" onClick={onRemove}>
-              Remove
-            </Button>
+              {/* Desktop view */}
+              <div className="hidden sm:flex items-center gap-4">
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowSets(true)}
+                    className="gap-2"
+                  >
+                    <Layers className="h-4 w-4" />
+                    Sets
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowPrintings(true)}
+                  >
+                    <Search className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="text-sm flex items-center space-x-2">
+                  <span>TCG: ${card.prices.tcgplayer?.toFixed(2) || "N/A"}</span>
+                  <span className="text-muted-foreground">|</span>
+                  <span>CK: ${card.prices.cardkingdom?.toFixed(2) || "N/A"}</span>
+                </div>
+
+                <Button variant="destructive" size="sm" onClick={onRemove}>
+                  Remove
+                </Button>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>

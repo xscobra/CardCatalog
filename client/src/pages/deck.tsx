@@ -33,7 +33,6 @@ export default function DeckPage() {
     enabled: id !== "new"
   });
 
-  // Set name when deck is loaded
   useEffect(() => {
     if (deck) {
       setName(deck.name);
@@ -138,9 +137,9 @@ export default function DeckPage() {
   };
 
   return (
-    <div className="container mx-auto p-8">
-      <div className="mb-8 space-y-4">
-        <div className="flex items-center gap-4">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 min-h-screen">
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <Button 
             variant="ghost" 
             onClick={() => setLocation("/")}
@@ -148,13 +147,15 @@ export default function DeckPage() {
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <Input
-            placeholder="Deck Name"
-            value={name}
-            onChange={handleNameChange}
-            className="text-2xl font-bold"
-            disabled={createDeck.isPending}
-          />
+          <div className="flex-1 w-full sm:w-auto">
+            <Input
+              placeholder="Deck Name"
+              value={name}
+              onChange={handleNameChange}
+              className="text-xl sm:text-2xl font-bold"
+              disabled={createDeck.isPending}
+            />
+          </div>
           {id !== "new" && (
             <Button
               variant="destructive"
@@ -166,20 +167,20 @@ export default function DeckPage() {
           )}
         </div>
 
-        <div className="flex gap-4">
-          <Button onClick={exportDeck} disabled={!deck}>
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={exportDeck} disabled={!deck} className="w-full sm:w-auto">
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
-          <Button disabled={!deck}>
+          <Button disabled={!deck} className="w-full sm:w-auto">
             <Upload className="mr-2 h-4 w-4" />
             Import
           </Button>
         </div>
       </div>
 
-      <div className="grid gap-8 md:grid-cols-2">
-        <div>
+      <div className="mt-8 grid gap-8 lg:grid-cols-2">
+        <div className="order-2 lg:order-1">
           <CardSearch
             onCardSelect={(card) => {
               if (!deck) return;
@@ -191,7 +192,7 @@ export default function DeckPage() {
           />
         </div>
 
-        <div>
+        <div className="order-1 lg:order-2">
           <DeckList
             cards={deck?.cards || []}
             pickedUpCards={deck?.pickedUpCards || []}
@@ -201,7 +202,7 @@ export default function DeckPage() {
       </div>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="sm:max-w-[425px]">
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
