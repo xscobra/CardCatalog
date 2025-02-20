@@ -110,12 +110,10 @@ export function CardRow({ card, onRemove, onSetClick, onCardClick, format }: Car
                     </Tooltip>
                   )}
                 </div>
-                <div className="text-base text-muted-foreground mt-2">
-                  TCG: ${card.prices.tcgplayer?.toFixed(2) || "N/A"}
+                <div className="space-y-1 mt-2 text-base text-muted-foreground">
+                  <div>TCGplayer: ${card.prices.tcgplayer?.toFixed(2) || "N/A"}</div>
                   {card.prices.cardkingdom && (
-                    <span className="ml-3">
-                      • CK: ${card.prices.cardkingdom.toFixed(2)}
-                    </span>
+                    <div>Card Kingdom: ${card.prices.cardkingdom.toFixed(2)}</div>
                   )}
                 </div>
               </div>
