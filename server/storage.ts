@@ -14,7 +14,7 @@ export interface IStorage {
 
   addPriceHistory(cardId: string, source: string, price: number): Promise<PriceHistory>;
   getPriceHistory(cardId: string, days?: number): Promise<PriceHistory[]>;
-  createPriceAlert(alert: Omit<PriceAlert, 'id'>): Promise<PriceAlert>;
+  createPriceAlert(alert: Omit<PriceAlert, 'id' | 'lastNotified'>): Promise<PriceAlert>;
   getPriceAlerts(cardId?: string): Promise<PriceAlert[]>;
   updatePriceAlert(id: number, updates: Partial<PriceAlert>): Promise<PriceAlert | undefined>;
 
@@ -25,59 +25,98 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   async getDeck(id: number): Promise<Deck | undefined> {
-    const [deck] = await db.select().from(decks).where(eq(decks.id, id));
-    return deck || undefined;
+    try {
+      const [deck] = await db.select().from(decks).where(eq(decks.id, id));
+      return deck;
+    } catch (error) {
+      console.error('Error getting deck:', error);
+      throw error;
+    }
   }
 
   async getAllDecks(): Promise<Deck[]> {
-    return await db.select().from(decks);
+    try {
+      return await db.select().from(decks);
+    } catch (error) {
+      console.error('Error getting all decks:', error);
+      throw error;
+    }
   }
 
   async createDeck(insertDeck: InsertDeck): Promise<Deck> {
-    const [deck] = await db
-      .insert(decks)
-      .values(insertDeck)
-      .returning();
-    return deck;
+    try {
+      const [deck] = await db
+        .insert(decks)
+        .values({
+          ...insertDeck,
+          cards: [],
+          pickedUpCards: []
+        })
+        .returning();
+      return deck;
+    } catch (error) {
+      console.error('Error creating deck:', error);
+      throw error;
+    }
   }
 
   async updateDeck(id: number, updates: Partial<Deck>): Promise<Deck | undefined> {
-    const [deck] = await db
-      .update(decks)
-      .set(updates)
-      .where(eq(decks.id, id))
-      .returning();
-    return deck || undefined;
+    try {
+      const [deck] = await db
+        .update(decks)
+        .set(updates)
+        .where(eq(decks.id, id))
+        .returning();
+      return deck;
+    } catch (error) {
+      console.error('Error updating deck:', error);
+      throw error;
+    }
   }
 
   async deleteDeck(id: number): Promise<boolean> {
-    const [deck] = await db
-      .delete(decks)
-      .where(eq(decks.id, id))
-      .returning();
-    return !!deck;
+    try {
+      const [deck] = await db
+        .delete(decks)
+        .where(eq(decks.id, id))
+        .returning();
+      return !!deck;
+    } catch (error) {
+      console.error('Error deleting deck:', error);
+      throw error;
+    }
   }
 
   async getWishlistCards(): Promise<DeckCard[]> {
-    const [wishlist] = await db.select().from(wishlistCards);
-    return wishlist?.cards || [];
+    try {
+      const [wishlist] = await db.select().from(wishlistCards);
+      return wishlist?.cards || [];
+    } catch (error) {
+      console.error('Error getting wishlist cards:', error);
+      throw error;
+    }
   }
 
   async updateWishlistCards(cards: DeckCard[]): Promise<DeckCard[]> {
-    const [wishlist] = await db.select().from(wishlistCards);
-    if (wishlist) {
-      const [updated] = await db
-        .update(wishlistCards)
-        .set({ cards })
-        .where(eq(wishlistCards.id, wishlist.id))
-        .returning();
-      return updated.cards;
-    } else {
-      const [created] = await db
-        .insert(wishlistCards)
-        .values({ cards })
-        .returning();
-      return created.cards;
+    try {
+      const [wishlist] = await db.select().from(wishlistCards);
+      if (wishlist) {
+        const [updated] = await db
+          .update(wishlistCards)
+          .set({ cards })
+          .where(eq(wishlistCards.id, wishlist.id))
+          .returning();
+        return updated.cards;
+      } else {
+        const [created] = await db
+          .insert(wishlistCards)
+          .values({ cards })
+          .returning();
+        return created.cards;
+      }
+    } catch (error) {
+      console.error('Error updating wishlist cards:', error);
+      throw error;
     }
   }
 
@@ -87,12 +126,12 @@ export class DatabaseStorage implements IStorage {
       .values({ 
         cardId, 
         source, 
-        price: price.toString()  // Convert to string for decimal type
+        price: price.toString()
       })
       .returning();
     return {
       ...history,
-      price: parseFloat(history.price) // Convert back to number for the interface
+      price: parseFloat(history.price)
     };
   }
 
@@ -113,21 +152,26 @@ export class DatabaseStorage implements IStorage {
 
     return results.map(history => ({
       ...history,
-      price: parseFloat(history.price) // Convert price strings to numbers
+      price: parseFloat(history.price)
     }));
   }
 
-  async createPriceAlert(alert: Omit<PriceAlert, 'id'>): Promise<PriceAlert> {
+  async createPriceAlert(alert: Omit<PriceAlert, 'id' | 'lastNotified'>): Promise<PriceAlert> {
     const [created] = await db
       .insert(priceAlerts)
       .values({
         ...alert,
-        targetPrice: alert.targetPrice.toString() // Convert to string for decimal type
+        targetPrice: alert.targetPrice.toString(),
+        isActive: true,
+        lastNotified: null
       })
       .returning();
+
     return {
       ...created,
-      targetPrice: parseFloat(created.targetPrice) // Convert back to number for the interface
+      targetPrice: parseFloat(created.targetPrice),
+      isActive: true,
+      lastNotified: null
     };
   }
 
@@ -139,13 +183,18 @@ export class DatabaseStorage implements IStorage {
     const results = await query;
     return results.map(alert => ({
       ...alert,
-      targetPrice: parseFloat(alert.targetPrice) // Convert price strings to numbers
+      targetPrice: parseFloat(alert.targetPrice),
+      isActive: alert.isActive ?? true
     }));
   }
 
   async updatePriceAlert(id: number, updates: Partial<PriceAlert>): Promise<PriceAlert | undefined> {
     const updatesWithStringPrice = updates.targetPrice !== undefined
-      ? { ...updates, targetPrice: updates.targetPrice.toString() }
+      ? { 
+          ...updates, 
+          targetPrice: updates.targetPrice.toString(),
+          isActive: updates.isActive ?? true
+        }
       : updates;
 
     const [alert] = await db
@@ -158,7 +207,8 @@ export class DatabaseStorage implements IStorage {
 
     return {
       ...alert,
-      targetPrice: parseFloat(alert.targetPrice) // Convert back to number for the interface
+      targetPrice: parseFloat(alert.targetPrice),
+      isActive: alert.isActive ?? true
     };
   }
 
