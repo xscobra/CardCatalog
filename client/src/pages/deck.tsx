@@ -144,13 +144,16 @@ export default function DeckPage() {
   const handleCardMove = (card: DeckCard, toPickedUp: boolean) => {
     if (!deck) return;
 
-    const newCards = deck.cards.filter((c) => c.id !== card.id);
-    const newPickedUp = deck.pickedUpCards.filter((c) => c.id !== card.id);
+    let newCards = [...deck.cards];
+    let newPickedUp = [...deck.pickedUpCards];
 
+    // Remove the card from both lists first
+    newCards = newCards.filter((c) => c.id !== card.id);
+    newPickedUp = newPickedUp.filter((c) => c.id !== card.id);
+
+    // Only add to the destination list if we're moving (not removing)
     if (toPickedUp) {
       newPickedUp.push(card);
-    } else {
-      newCards.push(card);
     }
 
     updateDeck.mutate({ cards: newCards, pickedUpCards: newPickedUp });
