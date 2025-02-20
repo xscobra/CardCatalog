@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useQuery } from "@tanstack/react-query";
-import { getCardPrints } from "@/lib/api";
+import { getCardPrints, getSetSymbolUrl } from "@/lib/api";
 import { Loader2 } from "lucide-react";
 
 interface SetSymbolsDialogProps {
@@ -26,13 +26,14 @@ export function SetSymbolsDialog({
     enabled: open
   });
 
-  const uniqueSets = prints ? [...new Map(prints.map(print => 
-    [print.set, {
-      code: print.set,
-      name: print.set_name,
-      symbol: `https://svgs.scryfall.io/sets/${print.set}.svg`
-    }]
-  )).values()] : [];
+  const uniqueSets = prints ? [...new Set(prints.map(print => print.set))].map(setCode => {
+    const print = prints.find(p => p.set === setCode);
+    return {
+      code: setCode,
+      name: print?.set_name || "",
+      symbol: getSetSymbolUrl(setCode)
+    };
+  }).filter(set => set.name) : [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -54,6 +55,10 @@ export function SetSymbolsDialog({
                     src={set.symbol}
                     alt={set.name}
                     className="w-8 h-8 mx-auto"
+                    onError={(e) => {
+                      // Hide the broken image icon
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
                   />
                   <p className="text-sm mt-1 text-muted-foreground">{set.name}</p>
                 </div>
