@@ -28,9 +28,10 @@ export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
-  async ({ queryKey }) => {
+  async ({ queryKey, signal }) => {
     const res = await fetch(queryKey[0] as string, {
       credentials: "include",
+      signal, // Add AbortController signal for request cancellation
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
@@ -46,18 +47,26 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
-      // Enable stale-while-revalidate
       staleTime: 1000 * 60, // Data remains fresh for 1 minute
-      cacheTime: 1000 * 60 * 5, // Cache persists for 5 minutes
-      // Reduce unnecessary background refetches
+      gcTime: 1000 * 60 * 5, // Cache garbage collection after 5 minutes
       refetchOnWindowFocus: false,
       refetchOnReconnect: true,
-      // Add retry with exponential backoff
-      retry: 3,
+      retry: (failureCount, error) => {
+        // Don't retry on 4xx errors
+        if (error instanceof Error && error.message.startsWith("4")) {
+          return false;
+        }
+        return failureCount < 3;
+      },
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     },
     mutations: {
-      retry: 2,
+      retry: (failureCount, error) => {
+        if (error instanceof Error && error.message.startsWith("4")) {
+          return false;
+        }
+        return failureCount < 2;
+      },
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     },
   },
