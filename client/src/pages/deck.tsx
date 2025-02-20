@@ -5,25 +5,38 @@ import { DeckList } from "@/components/deck-list";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useState } from "react";
-import { Download, Upload } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Download, Upload, ArrowLeft } from "lucide-react";
 import type { Deck, DeckCard } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
 
 export default function DeckPage() {
   const { id } = useParams();
   const [, setLocation] = useLocation();
   const [name, setName] = useState("");
+  const { toast } = useToast();
 
   const { data: deck } = useQuery<Deck>({
     queryKey: [`/api/decks/${id}`],
     enabled: id !== "new"
   });
 
+  // Set name when deck is loaded
+  useEffect(() => {
+    if (deck) {
+      setName(deck.name);
+    }
+  }, [deck]);
+
   const updateDeck = useMutation({
     mutationFn: (updates: Partial<Deck>) =>
       apiRequest("PATCH", `/api/decks/${id}`, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/decks/${id}`] });
+      toast({
+        title: "Deck Updated",
+        description: "Your changes have been saved."
+      });
     }
   });
 
@@ -34,16 +47,23 @@ export default function DeckPage() {
       const newDeck = await response.json();
       queryClient.invalidateQueries({ queryKey: ["/api/decks"] });
       setLocation(`/deck/${newDeck.id}`);
+      toast({
+        title: "Deck Created",
+        description: "Your new deck has been created successfully."
+      });
     }
   });
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setName(e.target.value);
+    const newName = e.target.value;
+    setName(newName);
+
+    if (newName.length < 1) return;
+
     if (id === "new") {
-      // Auto-save new deck when name is entered
-      createDeck.mutate({ name: e.target.value });
+      createDeck.mutate({ name: newName });
     } else {
-      updateDeck.mutate({ name: e.target.value });
+      updateDeck.mutate({ name: newName });
     }
   };
 
@@ -79,12 +99,22 @@ export default function DeckPage() {
   return (
     <div className="container mx-auto p-8">
       <div className="mb-8 space-y-4">
-        <Input
-          placeholder="Deck Name"
-          value={name}
-          onChange={handleNameChange}
-          className="text-2xl font-bold"
-        />
+        <div className="flex items-center gap-4">
+          <Button 
+            variant="ghost" 
+            onClick={() => setLocation("/")}
+            className="p-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <Input
+            placeholder="Deck Name"
+            value={name}
+            onChange={handleNameChange}
+            className="text-2xl font-bold"
+            disabled={createDeck.isPending}
+          />
+        </div>
 
         <div className="flex gap-4">
           <Button onClick={exportDeck} disabled={!deck}>
