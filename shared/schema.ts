@@ -10,6 +10,11 @@ export const decks = pgTable("decks", {
   pickedUpCards: jsonb("picked_up_cards").$type<DeckCard[]>().notNull().default([])
 });
 
+export const wishlistCards = pgTable("wishlist_cards", {
+  id: serial("id").primaryKey(),
+  cards: jsonb("cards").$type<DeckCard[]>().notNull().default([])
+});
+
 export const insertDeckSchema = createInsertSchema(decks).pick({
   name: true,
   description: true

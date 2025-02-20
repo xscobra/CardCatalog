@@ -49,6 +49,17 @@ export async function registerRoutes(app: Express) {
     res.json({ success: true });
   });
 
+  // Wishlist routes
+  api.get("/wishlist", async (req, res) => {
+    const cards = await storage.getWishlistCards();
+    res.json(cards);
+  });
+
+  api.put("/wishlist", async (req, res) => {
+    const cards = await storage.updateWishlistCards(req.body);
+    res.json(cards);
+  });
+
   app.use("/api", api);
   return createServer(app);
 }
