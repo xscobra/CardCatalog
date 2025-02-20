@@ -26,14 +26,14 @@ export function SetSymbolsDialog({
     enabled: open
   });
 
-  const uniqueSets = prints ? [...new Set(prints.map(print => print.set))].map(setCode => {
+  const uniqueSets = prints ? Array.from(new Set(prints.map(print => print.set))).map(setCode => {
     const print = prints.find(p => p.set === setCode);
     return {
       code: setCode,
       name: print?.set_name || "",
       symbol: getSetSymbolUrl(setCode)
     };
-  }).filter(set => set.name) : [];
+  }).filter(set => set.name && set.symbol) : [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -56,7 +56,6 @@ export function SetSymbolsDialog({
                     alt={set.name}
                     className="w-8 h-8 mx-auto"
                     onError={(e) => {
-                      // Hide the broken image icon
                       (e.target as HTMLImageElement).style.display = 'none';
                     }}
                   />

@@ -1,12 +1,6 @@
 import { DeckCard } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { PrintingsDialog } from "./printings-dialog";
@@ -48,9 +42,7 @@ export function CardRow({ card, onRemove, onSetClick, onCardClick }: CardRowProp
                 onClick={() => setShowImage(true)}
               />
             )}
-            <Button variant="ghost" onClick={onCardClick} className="font-medium">
-              {card.name}
-            </Button>
+            <span className="font-medium">{card.name}</span>
           </div>
 
           <div className="flex items-center gap-4">
@@ -73,8 +65,9 @@ export function CardRow({ card, onRemove, onSetClick, onCardClick }: CardRowProp
               </Button>
             </div>
 
-            <div className="text-sm">
-              <span className="mr-4">TCG: ${card.prices.tcgplayer?.toFixed(2) || "N/A"}</span>
+            <div className="text-sm flex items-center space-x-2">
+              <span>TCG: ${card.prices.tcgplayer?.toFixed(2) || "N/A"}</span>
+              <span className="text-muted-foreground">|</span>
               <span>CK: ${card.prices.cardkingdom?.toFixed(2) || "N/A"}</span>
             </div>
 
@@ -93,7 +86,6 @@ export function CardRow({ card, onRemove, onSetClick, onCardClick }: CardRowProp
 
       <SetSymbolsDialog
         cardName={card.name}
-        sets={card.sets}
         open={showSets}
         onOpenChange={setShowSets}
       />
