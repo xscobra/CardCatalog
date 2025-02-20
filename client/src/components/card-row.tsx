@@ -32,7 +32,7 @@ interface CardRowProps {
   onSetClick: (setName: string) => void;
   onCardClick: () => void;
   format?: string;
-  onPriceUpdate?: (cardId: string, newPrices: { tcgplayer: number | null; cardkingdom: number | null }, newImageUrl?: string) => void;
+  onPriceUpdate?: (cardId: string, newPrices: { tcgplayer: number | null; cardkingdom: number | null }) => void;
 }
 
 export function CardRow({ 
@@ -50,7 +50,6 @@ export function CardRow({
   const [showPriceAlert, setShowPriceAlert] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [selectedPrices, setSelectedPrices] = useState(card.prices);
-  const [cardImage, setCardImage] = useState(card.imageUrl);
 
   const { data: metadata } = useQuery({
     queryKey: ["/api/cards/metadata", card.id],
@@ -61,13 +60,10 @@ export function CardRow({
 
   const isLegal = format && metadata?.format_legality?.[format] === 'legal';
 
-  const handlePrintingSelect = (newPrices: { tcgplayer: number | null; cardkingdom: number | null }, newImageUrl?: string) => {
+  const handlePrintingSelect = (newPrices: { tcgplayer: number | null; cardkingdom: number | null }) => {
     setSelectedPrices(newPrices);
-    if (newImageUrl) {
-      setCardImage(newImageUrl);
-    }
     if (onPriceUpdate) {
-      onPriceUpdate(card.id, newPrices, newImageUrl);
+      onPriceUpdate(card.id, newPrices);
     }
   };
 
@@ -98,9 +94,9 @@ export function CardRow({
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             {/* Card Info Section */}
             <div className="flex items-center gap-4 min-w-0" onClick={() => !isDragging && onCardClick()}>
-              {cardImage && (
+              {card.imageUrl && (
                 <img
-                  src={cardImage}
+                  src={card.imageUrl}
                   alt={card.name}
                   className="w-16 h-16 object-cover rounded cursor-pointer shrink-0 touch-manipulation"
                   onClick={(e) => {
@@ -270,7 +266,7 @@ export function CardRow({
           <DialogTitle>{card.name}</DialogTitle>
           <div className="flex justify-center">
             <img
-              src={cardImage}
+              src={card.imageUrl}
               alt={card.name}
               className="max-w-full rounded-lg shadow-lg"
             />

@@ -8,15 +8,15 @@ export const decks = pgTable("decks", {
   description: text("description"),
   cards: jsonb("cards").$type<DeckCard[]>().notNull().default([]),
   pickedUpCards: jsonb("picked_up_cards").$type<DeckCard[]>().notNull().default([]),
-  format: text("format"),
-  isValid: boolean("is_valid").default(true),
-  notes: text("notes")
+  format: text("format"), // For tournament support
+  isValid: boolean("is_valid").default(true), // For tournament legality
+  notes: text("notes") // For deck notes
 });
 
 export const priceHistory = pgTable("price_history", {
   id: serial("id").primaryKey(),
   cardId: text("card_id").notNull(),
-  source: text("source").notNull(),
+  source: text("source").notNull(), // tcgplayer, cardkingdom, etc.
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   timestamp: timestamp("timestamp").defaultNow().notNull()
 });
@@ -25,13 +25,13 @@ export const priceAlerts = pgTable("price_alerts", {
   id: serial("id").primaryKey(),
   cardId: text("card_id").notNull(),
   targetPrice: decimal("target_price", { precision: 10, scale: 2 }).notNull(),
-  isAbove: boolean("is_above").notNull(),
+  isAbove: boolean("is_above").notNull(), // true for price increase alerts, false for decrease
   isActive: boolean("is_active").default(true),
   lastNotified: timestamp("last_notified")
 });
 
 export const cardMetadata = pgTable("card_metadata", {
-  id: text("id").primaryKey(),
+  id: text("id").primaryKey(), // Scryfall ID
   name: text("name").notNull(),
   manaCost: text("mana_cost"),
   cmc: decimal("cmc", { precision: 4, scale: 1 }),
@@ -73,6 +73,7 @@ export interface DeckCard {
   imageUrl: string;
 }
 
+// New types for metadata and analysis
 export interface DeckAnalysis {
   manaCurve: Record<number, number>;
   colorDistribution: Record<string, number>;
