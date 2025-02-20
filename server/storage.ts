@@ -90,6 +90,18 @@ export class DatabaseStorage implements IStorage {
 
   async updateDeck(id: number, updates: Partial<Deck>): Promise<Deck | undefined> {
     try {
+      // If we're updating picked up cards, ensure we fully remove any deleted cards
+      if (updates.pickedUpCards) {
+        const existingDeck = await this.getDeck(id);
+        if (existingDeck) {
+          // Remove any cards that are no longer in the picked up cards array
+          const updatedPickedUpCards = updates.pickedUpCards.filter(card =>
+            existingDeck.pickedUpCards.some(existingCard => existingCard.id === card.id)
+          );
+          updates = { ...updates, pickedUpCards: updatedPickedUpCards };
+        }
+      }
+
       const [deck] = await db
         .update(decks)
         .set(updates)
@@ -298,7 +310,13 @@ export class DatabaseStorage implements IStorage {
 
   async getCardRecommendations(cardIds: string[]): Promise<CardRecommendation[]> {
     try {
-      // Use array_agg to properly handle the array of card IDs
+      console.log('Getting recommendations for cards:', cardIds);
+
+      if (!cardIds.length) {
+        console.log('No card IDs provided for recommendations');
+        return [];
+      }
+
       const recommendations = await db
         .select({
           card: cardMetadata,
@@ -310,9 +328,13 @@ export class DatabaseStorage implements IStorage {
           cardMetadata,
           eq(cardMetadata.id, cardCombinations.combinedWithId)
         )
-        .where(sql`${cardCombinations.cardId} = ANY(ARRAY[${sql.join(cardIds, sql`, `)}]::text[])`)
+        .where(
+          sql`${cardCombinations.cardId} = ANY(${sql.array(cardIds, 'text')})`
+        )
         .orderBy(desc(cardCombinations.frequency))
         .limit(10);
+
+      console.log('Found recommendations:', recommendations.length);
 
       return recommendations.map(r => ({
         card: r.card,
@@ -327,28 +349,12 @@ export class DatabaseStorage implements IStorage {
 
   async getBudgetAlternatives(cardId: string, maxPriceRatio = 0.5): Promise<BudgetAlternative[]> {
     try {
+      console.log('Getting budget alternatives for card:', cardId);
+
       const alternatives = await db
         .select({
-          originalCard: {
-            id: cardMetadata.id,
-            name: cardMetadata.name,
-            manaCost: cardMetadata.manaCost,
-            cmc: cardMetadata.cmc,
-            colors: cardMetadata.colors,
-            types: cardMetadata.types,
-            format_legality: cardMetadata.format_legality,
-            rarity: cardMetadata.rarity
-          },
-          budgetCard: {
-            id: sql<string>`bc.id`,
-            name: sql<string>`bc.name`,
-            manaCost: sql<string>`bc.mana_cost`,
-            cmc: sql<string>`bc.cmc`,
-            colors: sql<string[]>`bc.colors`,
-            types: sql<string[]>`bc.types`,
-            format_legality: sql<Record<string, string>>`bc.format_legality`,
-            rarity: sql<string>`bc.rarity`
-          },
+          originalCard: cardMetadata,
+          budgetCard: cardMetadata,
           priceRatio: budgetAlternatives.priceRatio,
           similarityScore: budgetAlternatives.similarityScore
         })
@@ -358,16 +364,14 @@ export class DatabaseStorage implements IStorage {
           eq(cardMetadata.id, budgetAlternatives.expensiveCardId)
         )
         .innerJoin(
-          cardMetadata.as('bc'),
-          and(
-            eq(sql`bc.id`, budgetAlternatives.budgetCardId),
-            eq(budgetAlternatives.expensiveCardId, cardId),
-            gt(budgetAlternatives.similarityScore, '0.7'),
-            lt(budgetAlternatives.priceRatio, maxPriceRatio.toString())
-          )
+          cardMetadata,
+          eq(cardMetadata.id, budgetAlternatives.budgetCardId)
         )
+        .where(eq(budgetAlternatives.expensiveCardId, cardId))
         .orderBy(desc(budgetAlternatives.similarityScore))
         .limit(5);
+
+      console.log('Found budget alternatives:', alternatives.length);
 
       return alternatives.map(a => ({
         originalCard: a.originalCard,
