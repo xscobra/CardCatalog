@@ -50,50 +50,6 @@ export async function registerRoutes(app: Express) {
     res.json({ success: true });
   });
 
-  // Card recommendations routes
-  api.get("/recommendations", async (req, res) => {
-    try {
-      const cardIds = (req.query.cardIds as string).split(",");
-      if (!cardIds.length) {
-        return res.json([]);
-      }
-      const recommendations = await storage.getCardRecommendations(cardIds);
-      res.json(recommendations);
-    } catch (error) {
-      console.error("Error getting recommendations:", error);
-      res.status(500).json({ message: "Error getting recommendations" });
-    }
-  });
-
-  api.get("/budget-alternatives", async (req, res) => {
-    try {
-      const cardIds = (req.query.cardIds as string).split(",");
-      if (!cardIds.length) {
-        return res.json([]);
-      }
-
-      // Get budget alternatives for each card
-      const alternatives = await Promise.all(
-        cardIds.map(async (cardId) => {
-          const alts = await storage.getBudgetAlternatives(cardId);
-          return alts;
-        })
-      );
-
-      // Flatten and return unique alternatives
-      const uniqueAlternatives = Array.from(
-        new Map(
-          alternatives.flat().map(alt => [alt.budgetCard.id, alt])
-        ).values()
-      );
-
-      res.json(uniqueAlternatives);
-    } catch (error) {
-      console.error("Error getting budget alternatives:", error);
-      res.status(500).json({ message: "Error getting budget alternatives" });
-    }
-  });
-
   // Price history routes
   api.get("/cards/:cardId/price-history", async (req, res) => {
     const { cardId } = req.params;

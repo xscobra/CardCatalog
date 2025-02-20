@@ -1,7 +1,7 @@
-import { decks, wishlistCards, priceHistory, priceAlerts, cardMetadata, cardCombinations, budgetAlternatives,
-  type Deck, type InsertDeck, type DeckCard, type PriceAlert, type PriceHistory, type CardRecommendation, type BudgetAlternative } from "@shared/schema";
+import { decks, wishlistCards, priceHistory, priceAlerts, cardMetadata,
+  type Deck, type InsertDeck, type DeckCard, type PriceAlert, type PriceHistory } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, sql, gt, lt, asc } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 
 export interface IStorage {
   getDeck(id: number): Promise<Deck | undefined>;
@@ -21,17 +21,11 @@ export interface IStorage {
   upsertCardMetadata(metadata: typeof cardMetadata.$inferInsert): Promise<typeof cardMetadata.$inferSelect>;
   getCardMetadata(cardId: string): Promise<typeof cardMetadata.$inferSelect | undefined>;
   getCardsByFormat(format: string): Promise<typeof cardMetadata.$inferSelect[]>;
-
-  // New methods for recommendations
-  getCardRecommendations(cardIds: string[]): Promise<CardRecommendation[]>;
-  getBudgetAlternatives(cardId: string, maxPriceRatio?: number): Promise<BudgetAlternative[]>;
-  updateCardCombination(cardId: string, combinedWithId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
   async getDeck(id: number): Promise<Deck | undefined> {
     try {
-      // Optimize by selecting only necessary fields
       const [deck] = await db
         .select({
           id: decks.id,
@@ -54,16 +48,8 @@ export class DatabaseStorage implements IStorage {
 
   async getAllDecks(): Promise<Deck[]> {
     try {
-      // Optimize by selecting only necessary fields for listing
       return await db
-        .select({
-          id: decks.id,
-          name: decks.name,
-          cards: decks.cards,
-          pickedUpCards: decks.pickedUpCards,
-          format: decks.format,
-          isValid: decks.isValid
-        })
+        .select()
         .from(decks);
     } catch (error) {
       console.error('Error getting all decks:', error);
@@ -90,18 +76,6 @@ export class DatabaseStorage implements IStorage {
 
   async updateDeck(id: number, updates: Partial<Deck>): Promise<Deck | undefined> {
     try {
-      // If we're updating picked up cards, ensure we fully remove any deleted cards
-      if (updates.pickedUpCards) {
-        const existingDeck = await this.getDeck(id);
-        if (existingDeck) {
-          // Remove any cards that are no longer in the picked up cards array
-          const updatedPickedUpCards = updates.pickedUpCards.filter(card =>
-            existingDeck.pickedUpCards.some(existingCard => existingCard.id === card.id)
-          );
-          updates = { ...updates, pickedUpCards: updatedPickedUpCards };
-        }
-      }
-
       const [deck] = await db
         .update(decks)
         .set(updates)
@@ -129,7 +103,6 @@ export class DatabaseStorage implements IStorage {
 
   async getWishlistCards(): Promise<DeckCard[]> {
     try {
-      // Optimize by selecting only the cards field
       const [wishlist] = await db
         .select({ cards: wishlistCards.cards })
         .from(wishlistCards);
@@ -186,13 +159,7 @@ export class DatabaseStorage implements IStorage {
     cutoffDate.setDate(cutoffDate.getDate() - days);
 
     const results = await db
-      .select({
-        id: priceHistory.id,
-        cardId: priceHistory.cardId,
-        source: priceHistory.source,
-        price: priceHistory.price,
-        timestamp: priceHistory.timestamp
-      })
+      .select()
       .from(priceHistory)
       .where(
         and(
@@ -201,23 +168,6 @@ export class DatabaseStorage implements IStorage {
         )
       )
       .orderBy(desc(priceHistory.timestamp));
-
-    // Add sample data if no history exists
-    if (results.length === 0) {
-      const sampleData: PriceHistory[] = [];
-      for (let i = 0; i < days; i++) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        sampleData.push({
-          id: i,
-          cardId,
-          source: 'tcgplayer',
-          price: 10 + Math.random() * 5,
-          timestamp: date
-        });
-      }
-      return sampleData.reverse();
-    }
 
     return results.map(history => ({
       ...history,
@@ -261,8 +211,7 @@ export class DatabaseStorage implements IStorage {
     const updatesWithStringPrice = updates.targetPrice !== undefined
       ? {
         ...updates,
-        targetPrice: updates.targetPrice.toString(),
-        isActive: updates.isActive ?? true
+        targetPrice: updates.targetPrice.toString()
       }
       : updates;
 
@@ -306,101 +255,6 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(cardMetadata)
       .where(sql`${cardMetadata.format_legality}->>${format} = 'legal'`);
-  }
-
-  async getCardRecommendations(cardIds: string[]): Promise<CardRecommendation[]> {
-    try {
-      console.log('Getting recommendations for cards:', cardIds);
-
-      if (!cardIds.length) {
-        console.log('No card IDs provided for recommendations');
-        return [];
-      }
-
-      const recommendations = await db
-        .select({
-          card: cardMetadata,
-          synergy: cardCombinations.synergy,
-          frequency: cardCombinations.frequency
-        })
-        .from(cardCombinations)
-        .innerJoin(
-          cardMetadata,
-          eq(cardMetadata.id, cardCombinations.combinedWithId)
-        )
-        .where(
-          sql`${cardCombinations.cardId} = ANY(${sql.array(cardIds, 'text')})`
-        )
-        .orderBy(desc(cardCombinations.frequency))
-        .limit(10);
-
-      console.log('Found recommendations:', recommendations.length);
-
-      return recommendations.map(r => ({
-        card: r.card,
-        synergy: parseFloat(r.synergy.toString()),
-        frequency: r.frequency
-      }));
-    } catch (error) {
-      console.error('Error getting card recommendations:', error);
-      return [];
-    }
-  }
-
-  async getBudgetAlternatives(cardId: string, maxPriceRatio = 0.5): Promise<BudgetAlternative[]> {
-    try {
-      console.log('Getting budget alternatives for card:', cardId);
-
-      const alternatives = await db
-        .select({
-          originalCard: cardMetadata,
-          budgetCard: cardMetadata,
-          priceRatio: budgetAlternatives.priceRatio,
-          similarityScore: budgetAlternatives.similarityScore
-        })
-        .from(budgetAlternatives)
-        .innerJoin(
-          cardMetadata,
-          eq(cardMetadata.id, budgetAlternatives.expensiveCardId)
-        )
-        .innerJoin(
-          cardMetadata,
-          eq(cardMetadata.id, budgetAlternatives.budgetCardId)
-        )
-        .where(eq(budgetAlternatives.expensiveCardId, cardId))
-        .orderBy(desc(budgetAlternatives.similarityScore))
-        .limit(5);
-
-      console.log('Found budget alternatives:', alternatives.length);
-
-      return alternatives.map(a => ({
-        originalCard: a.originalCard,
-        budgetCard: a.budgetCard,
-        priceRatio: parseFloat(a.priceRatio.toString()),
-        similarityScore: parseFloat(a.similarityScore.toString())
-      }));
-    } catch (error) {
-      console.error('Error getting budget alternatives:', error);
-      return [];
-    }
-  }
-
-  async updateCardCombination(cardId: string, combinedWithId: string): Promise<void> {
-    await db
-      .insert(cardCombinations)
-      .values({
-        cardId,
-        combinedWithId,
-        frequency: 1,
-        synergy: 0.5
-      })
-      .onConflictDoUpdate({
-        target: [cardCombinations.cardId, cardCombinations.combinedWithId],
-        set: {
-          frequency: sql`${cardCombinations.frequency} + 1`,
-          updatedAt: new Date()
-        }
-      });
   }
 }
 
