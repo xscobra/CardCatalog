@@ -40,7 +40,7 @@ export function WishlistSection() {
         tcgplayer: card.prices.usd ? parseFloat(card.prices.usd) : null,
         cardkingdom: card.prices.usd_foil ? parseFloat(card.prices.usd_foil) : null,
       },
-      imageUrl: getCardImageUrl(card),
+      imageUrl: card.image_uris?.normal || card.card_faces?.[0]?.image_uris?.normal || "",
     };
   };
 
