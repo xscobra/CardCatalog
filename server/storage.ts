@@ -1,4 +1,6 @@
 import { decks, type Deck, type InsertDeck } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   getDeck(id: number): Promise<Deck | undefined>;
@@ -8,47 +10,40 @@ export interface IStorage {
   deleteDeck(id: number): Promise<boolean>;
 }
 
-export class MemStorage implements IStorage {
-  private decks: Map<number, Deck>;
-  private currentId: number;
-
-  constructor() {
-    this.decks = new Map();
-    this.currentId = 1;
-  }
-
+export class DatabaseStorage implements IStorage {
   async getDeck(id: number): Promise<Deck | undefined> {
-    return this.decks.get(id);
+    const [deck] = await db.select().from(decks).where(eq(decks.id, id));
+    return deck || undefined;
   }
 
   async getAllDecks(): Promise<Deck[]> {
-    return Array.from(this.decks.values());
+    return await db.select().from(decks);
   }
 
   async createDeck(insertDeck: InsertDeck): Promise<Deck> {
-    const id = this.currentId++;
-    const deck: Deck = {
-      id,
-      ...insertDeck,
-      cards: [],
-      pickedUpCards: []
-    };
-    this.decks.set(id, deck);
+    const [deck] = await db
+      .insert(decks)
+      .values(insertDeck)
+      .returning();
     return deck;
   }
 
   async updateDeck(id: number, updates: Partial<Deck>): Promise<Deck | undefined> {
-    const deck = this.decks.get(id);
-    if (!deck) return undefined;
-
-    const updatedDeck = { ...deck, ...updates };
-    this.decks.set(id, updatedDeck);
-    return updatedDeck;
+    const [deck] = await db
+      .update(decks)
+      .set(updates)
+      .where(eq(decks.id, id))
+      .returning();
+    return deck || undefined;
   }
 
   async deleteDeck(id: number): Promise<boolean> {
-    return this.decks.delete(id);
+    const [deck] = await db
+      .delete(decks)
+      .where(eq(decks.id, id))
+      .returning();
+    return !!deck;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
