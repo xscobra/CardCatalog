@@ -27,7 +27,16 @@ export function DeckList({
   onPriceUpdate 
 }: DeckListProps) {
   const [selectedCard, setSelectedCard] = useState<DeckCard | null>(null);
-  const [selectedSet, setSelectedSet] = useState<string | null>(null);
+
+  const handleCardMove = (card: DeckCard, toPickedUp: boolean) => {
+    if (toPickedUp && cards.includes(card)) {
+      // Moving from deck to picked up
+      onCardMove(card, true);
+    } else if (!toPickedUp && pickedUpCards.includes(card)) {
+      // Removing from picked up section completely
+      onCardMove(card, false);
+    }
+  };
 
   const PriceFooter = () => (
     <Card className="mt-4">
@@ -55,10 +64,9 @@ export function DeckList({
           <ScrollArea className="h-[400px] px-1">
             {cards.map((card) => (
               <CardRow
-                key={card.id}
+                key={`deck-${card.id}`}
                 card={card}
-                onRemove={() => onCardMove(card, true)}
-                onSetClick={setSelectedSet}
+                onRemove={() => handleCardMove(card, true)}
                 onCardClick={() => setSelectedCard(card)}
                 format={format}
                 onPriceUpdate={onPriceUpdate}
@@ -72,10 +80,9 @@ export function DeckList({
           <ScrollArea className="h-[200px] px-1">
             {pickedUpCards.map((card) => (
               <CardRow
-                key={card.id}
+                key={`picked-${card.id}`}
                 card={card}
-                onRemove={() => onCardMove(card, false)}
-                onSetClick={setSelectedSet}
+                onRemove={() => handleCardMove(card, false)}
                 onCardClick={() => setSelectedCard(card)}
                 format={format}
                 onPriceUpdate={onPriceUpdate}
@@ -102,10 +109,9 @@ export function DeckList({
             <ScrollArea className="h-[calc(100vh-16rem)] px-1">
               {cards.map((card) => (
                 <CardRow
-                  key={card.id}
+                  key={`deck-${card.id}`}
                   card={card}
-                  onRemove={() => onCardMove(card, true)}
-                  onSetClick={setSelectedSet}
+                  onRemove={() => handleCardMove(card, true)}
                   onCardClick={() => setSelectedCard(card)}
                   format={format}
                   onPriceUpdate={onPriceUpdate}
@@ -117,10 +123,9 @@ export function DeckList({
             <ScrollArea className="h-[calc(100vh-16rem)] px-1">
               {pickedUpCards.map((card) => (
                 <CardRow
-                  key={card.id}
+                  key={`picked-${card.id}`}
                   card={card}
-                  onRemove={() => onCardMove(card, false)}
-                  onSetClick={setSelectedSet}
+                  onRemove={() => handleCardMove(card, false)}
                   onCardClick={() => setSelectedCard(card)}
                   format={format}
                   onPriceUpdate={onPriceUpdate}
