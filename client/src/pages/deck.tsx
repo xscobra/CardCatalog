@@ -4,23 +4,22 @@ import { CardSearch } from "@/components/card-search";
 import { DeckList } from "@/components/deck-list";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState } from "react";
 import { Download, Upload } from "lucide-react";
-import { queryClient } from "@/lib/queryClient";
-import type { DeckCard } from "@shared/schema";
+import type { Deck, DeckCard } from "@shared/schema";
 
 export default function DeckPage() {
   const { id } = useParams();
   const [name, setName] = useState("");
-  
-  const { data: deck } = useQuery({
+
+  const { data: deck } = useQuery<Deck>({
     queryKey: [`/api/decks/${id}`],
     enabled: id !== "new"
   });
 
   const updateDeck = useMutation({
-    mutationFn: (updates: any) =>
+    mutationFn: (updates: Partial<Deck>) =>
       apiRequest("PATCH", `/api/decks/${id}`, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/decks/${id}`] });
@@ -28,7 +27,7 @@ export default function DeckPage() {
   });
 
   const createDeck = useMutation({
-    mutationFn: (data: any) =>
+    mutationFn: (data: Partial<Deck>) =>
       apiRequest("POST", "/api/decks", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/decks"] });
@@ -55,7 +54,7 @@ export default function DeckPage() {
     const text = deck.cards
       .map((card) => `${card.name} (${card.sets.map((s) => s.name).join(", ")})`)
       .join("\n");
-    
+
     const blob = new Blob([text], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -73,7 +72,7 @@ export default function DeckPage() {
           onChange={(e) => setName(e.target.value)}
           className="text-2xl font-bold"
         />
-        
+
         <div className="flex gap-4">
           <Button onClick={exportDeck}>
             <Download className="mr-2 h-4 w-4" />

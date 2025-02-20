@@ -3,9 +3,10 @@ import { Link } from "wouter";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { Deck } from "@shared/schema";
 
 export default function Home() {
-  const { data: decks } = useQuery({
+  const { data: decks } = useQuery<Deck[]>({
     queryKey: ["/api/decks"]
   });
 
