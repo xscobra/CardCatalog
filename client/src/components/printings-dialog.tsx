@@ -37,20 +37,32 @@ export function PrintingsDialog({ cardName, open, onOpenChange }: PrintingsDialo
                         src={print.image_uris.normal}
                         alt={`${print.name} (${print.set_name})`}
                         className="w-full rounded-lg shadow-lg hover:scale-105 transition-transform"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
                       />
                     )}
-                    <div className="mt-2 text-sm text-center">
+                    <div className="mt-2 text-sm">
                       <div className="flex items-center justify-center gap-2 mb-1">
                         <img
                           src={getSetSymbolUrl(print.set)}
                           alt={print.set_name}
                           className="w-6 h-6"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
                         />
                         <p className="font-medium">{print.set_name}</p>
                       </div>
-                      <p className="text-muted-foreground">
-                        ${print.prices.usd || "N/A"}
-                      </p>
+                      <div className="flex justify-center items-center gap-2 text-muted-foreground">
+                        <span>${print.prices.usd || "N/A"}</span>
+                        {print.prices.usd_foil && (
+                          <>
+                            <span>|</span>
+                            <span>Foil: ${print.prices.usd_foil}</span>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
