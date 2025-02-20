@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { DeckCard } from "@shared/schema";
+import type { ScryfallCard } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
 export function WishlistSection() {
@@ -27,8 +28,26 @@ export function WishlistSection() {
     }
   });
 
-  const handleAddCard = (card: DeckCard) => {
-    if (cards.some(c => c.id === card.id)) {
+  const transformScryfallCard = (card: ScryfallCard): DeckCard => {
+    return {
+      id: card.id,
+      name: card.name,
+      sets: [{
+        code: card.set,
+        name: card.set_name,
+        symbol: `https://api.scryfall.com/sets/${card.set}/icon.svg`,
+      }],
+      prices: {
+        tcgplayer: card.prices.usd ? parseFloat(card.prices.usd) : null,
+        cardkingdom: card.prices.usd_foil ? parseFloat(card.prices.usd_foil) : null,
+      },
+      imageUrl: card.image_uris?.normal || "",
+    };
+  };
+
+  const handleAddCard = (card: ScryfallCard) => {
+    const transformedCard = transformScryfallCard(card);
+    if (cards.some(c => c.id === transformedCard.id)) {
       toast({
         title: "Card Already in Wishlist",
         description: "This card is already in your wishlist.",
@@ -36,7 +55,7 @@ export function WishlistSection() {
       });
       return;
     }
-    updateWishlist.mutate([...cards, card]);
+    updateWishlist.mutate([...cards, transformedCard]);
   };
 
   const handleRemoveCard = (cardId: string) => {
@@ -58,12 +77,21 @@ export function WishlistSection() {
               {cards.map((card) => (
                 <Card key={card.id} className="mb-2">
                   <CardContent className="p-4 flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">{card.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        TCG: ${card.prices.tcgplayer || "N/A"} | 
-                        CK: ${card.prices.cardkingdom || "N/A"}
-                      </p>
+                    <div className="flex items-center gap-4">
+                      {card.imageUrl && (
+                        <img 
+                          src={card.imageUrl} 
+                          alt={card.name} 
+                          className="w-16 h-16 object-cover rounded"
+                        />
+                      )}
+                      <div>
+                        <p className="font-medium">{card.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          TCG: ${card.prices.tcgplayer?.toFixed(2) || "N/A"} | 
+                          CK: ${card.prices.cardkingdom?.toFixed(2) || "N/A"}
+                        </p>
+                      </div>
                     </div>
                     <Button
                       variant="destructive"

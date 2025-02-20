@@ -98,7 +98,7 @@ export default function DeckPage() {
       sets: [{
         code: card.set,
         name: card.set_name,
-        symbol: card.set_uri,
+        symbol: `https://api.scryfall.com/sets/${card.set}/icon.svg`,
       }],
       prices: {
         tcgplayer: card.prices.usd ? parseFloat(card.prices.usd) : null,
