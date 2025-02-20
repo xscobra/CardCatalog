@@ -3,12 +3,11 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { CardSearch } from "./card-search";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { DeckCard } from "@shared/schema";
 import type { ScryfallCard } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { CardRow } from "./card-row";
 
 export function WishlistSection() {
   const { data: cards = [] } = useQuery<DeckCard[]>({
@@ -75,33 +74,13 @@ export function WishlistSection() {
           <div>
             <ScrollArea className="h-[400px]">
               {cards.map((card) => (
-                <Card key={card.id} className="mb-2">
-                  <CardContent className="p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      {card.imageUrl && (
-                        <img 
-                          src={card.imageUrl} 
-                          alt={card.name} 
-                          className="w-16 h-16 object-cover rounded"
-                        />
-                      )}
-                      <div>
-                        <p className="font-medium">{card.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          TCG: ${card.prices.tcgplayer?.toFixed(2) || "N/A"} | 
-                          CK: ${card.prices.cardkingdom?.toFixed(2) || "N/A"}
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      onClick={() => handleRemoveCard(card.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </CardContent>
-                </Card>
+                <CardRow
+                  key={card.id}
+                  card={card}
+                  onRemove={() => handleRemoveCard(card.id)}
+                  onSetClick={() => {}}
+                  onCardClick={() => {}}
+                />
               ))}
             </ScrollArea>
           </div>
