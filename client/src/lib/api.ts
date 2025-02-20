@@ -26,74 +26,117 @@ const scryfallCardSchema = z.object({
 
 export type ScryfallCard = z.infer<typeof scryfallCardSchema>;
 
-// Rate limit tracking
-const rateLimitState = {
-  remaining: 1000, // Scryfall default
-  reset: Date.now() + 60000, // Default 1 minute
-  lastRequest: Date.now(),
-};
+// Improved rate limit tracking with request queue
+class RateLimiter {
+  private queue: Array<() => Promise<void>> = [];
+  private processing = false;
+  private remaining = 1000;
+  private reset = Date.now() + 60000;
+  private lastRequest = Date.now();
 
-// Create axios instance with interceptors
+  async execute<T>(request: () => Promise<T>): Promise<T> {
+    return new Promise((resolve, reject) => {
+      this.queue.push(async () => {
+        try {
+          // Ensure minimum delay between requests
+          const timeSinceLastRequest = Date.now() - this.lastRequest;
+          if (timeSinceLastRequest < 100) {
+            await new Promise(resolve => setTimeout(resolve, 100 - timeSinceLastRequest));
+          }
+
+          // Check rate limit
+          if (this.remaining <= 5) {
+            const timeUntilReset = this.reset - Date.now();
+            if (timeUntilReset > 0) {
+              await new Promise(resolve => setTimeout(resolve, timeUntilReset));
+            }
+          }
+
+          const result = await request();
+          resolve(result);
+        } catch (error) {
+          reject(error);
+        }
+      });
+
+      if (!this.processing) {
+        this.processQueue();
+      }
+    });
+  }
+
+  private async processQueue() {
+    if (this.queue.length === 0) {
+      this.processing = false;
+      return;
+    }
+
+    this.processing = true;
+    const request = this.queue.shift();
+    if (request) {
+      await request();
+      this.lastRequest = Date.now();
+      this.processQueue();
+    }
+  }
+
+  updateLimits(headers: Record<string, string>) {
+    const remaining = headers['x-ratelimit-remaining'];
+    const reset = headers['x-ratelimit-reset'];
+
+    if (remaining) this.remaining = parseInt(remaining, 10);
+    if (reset) this.reset = parseInt(reset, 10) * 1000;
+  }
+}
+
+const rateLimiter = new RateLimiter();
+
+// Create axios instance with enhanced error handling
 const api = axios.create({
-  baseURL: "https://api.scryfall.com"
+  baseURL: "https://api.scryfall.com",
+  timeout: 10000,
 });
 
 // Add response interceptor for rate limit tracking
-api.interceptors.response.use((response) => {
-  // Update rate limit info from headers
-  const remaining = response.headers['x-ratelimit-remaining'];
-  const reset = response.headers['x-ratelimit-reset'];
+api.interceptors.response.use(
+  (response) => {
+    rateLimiter.updateLimits(response.headers as Record<string, string>);
+    return response;
+  },
+  async (error) => {
+    if (axios.isAxiosError(error)) {
+      if (error.response?.status === 429) {
+        const retryAfter = error.response.headers['retry-after'];
+        if (retryAfter) {
+          await new Promise(resolve => setTimeout(resolve, parseInt(retryAfter, 10) * 1000));
+          return api.request(error.config);
+        }
+      }
 
-  if (remaining) rateLimitState.remaining = parseInt(remaining, 10);
-  if (reset) rateLimitState.reset = parseInt(reset, 10) * 1000; // Convert to milliseconds
-
-  rateLimitState.lastRequest = Date.now();
-
-  // Log rate limit status
-  console.log(`Scryfall API Rate Limit: ${rateLimitState.remaining} requests remaining, resets in ${Math.ceil((rateLimitState.reset - Date.now()) / 1000)}s`);
-
-  return response;
-}, async (error) => {
-  if (error.response?.status === 429) {
-    console.warn('Rate limit exceeded, waiting for reset...');
-    const retryAfter = error.response.headers['retry-after'];
-    if (retryAfter) {
-      const delay = parseInt(retryAfter, 10) * 1000;
-      await new Promise(resolve => setTimeout(resolve, delay));
-      return api.request(error.config);
+      // Enhance error messages
+      throw new Error(
+        error.response?.data?.details ||
+        error.response?.data?.message ||
+        error.message
+      );
     }
+    throw error;
   }
-  throw error;
-});
+);
 
-// Add request interceptor for rate limiting
-api.interceptors.request.use(async (config) => {
-  // Check if we need to wait for rate limit reset
-  if (rateLimitState.remaining <= 5) { // Buffer of 5 requests
-    const timeUntilReset = rateLimitState.reset - Date.now();
-    if (timeUntilReset > 0) {
-      console.warn(`Rate limit low (${rateLimitState.remaining} remaining), waiting ${Math.ceil(timeUntilReset / 1000)}s for reset`);
-      await new Promise(resolve => setTimeout(resolve, timeUntilReset));
-    }
-  }
-
-  // Ensure minimum delay between requests (100ms)
-  const timeSinceLastRequest = Date.now() - rateLimitState.lastRequest;
-  if (timeSinceLastRequest < 100) {
-    await new Promise(resolve => setTimeout(resolve, 100 - timeSinceLastRequest));
-  }
-
-  return config;
-});
-
+// Wrap API calls with rate limiter
 export const searchCards = async (query: string) => {
-  const response = await api.get(`/cards/search?q=${encodeURIComponent(query)}`);
-  return z.array(scryfallCardSchema).parse(response.data.data);
+  return rateLimiter.execute(async () => {
+    const response = await api.get(`/cards/search?q=${encodeURIComponent(query)}`);
+    return z.array(scryfallCardSchema).parse(response.data.data);
+  });
 };
 
 export const getCardPrints = async (cardName: string) => {
-  const response = await api.get(`/cards/search?q=!"${encodeURIComponent(cardName)}" unique:prints`);
-  return z.array(scryfallCardSchema).parse(response.data.data);
+  return rateLimiter.execute(async () => {
+    const response = await api.get(`/cards/search?q=!"${encodeURIComponent(cardName)}" unique:prints`);
+    return z.array(scryfallCardSchema).parse(response.data.data);
+  });
 };
 
 export const getSetSymbolUrl = (setCode: string) => {
@@ -101,12 +144,10 @@ export const getSetSymbolUrl = (setCode: string) => {
 };
 
 export const getCardImageUrl = (card: ScryfallCard): string => {
-  // For regular cards, use the main image_uris
   if (card.image_uris?.normal) {
     return card.image_uris.normal;
   }
 
-  // For dual-faced cards, use the front face image
   if (card.card_faces?.[0]?.image_uris?.normal) {
     return card.card_faces[0].image_uris.normal;
   }
