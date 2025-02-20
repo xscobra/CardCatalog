@@ -5,7 +5,7 @@ import { DeckList } from "@/components/deck-list";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Download, Upload, ArrowLeft, Trash2 } from "lucide-react";
 import type { Deck, DeckCard } from "@shared/schema";
 import type { ScryfallCard } from "@/lib/api";
@@ -25,6 +25,7 @@ export default function DeckPage() {
   const { id } = useParams();
   const [, setLocation] = useLocation();
   const [name, setName] = useState("");
+  const [debouncedName, setDebouncedName] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { toast } = useToast();
 
@@ -36,8 +37,29 @@ export default function DeckPage() {
   useEffect(() => {
     if (deck) {
       setName(deck.name);
+      setDebouncedName(deck.name);
     }
   }, [deck]);
+
+  // Debounce the name changes
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDebouncedName(name);
+    }, 500); // Wait for 500ms of no typing before updating
+
+    return () => clearTimeout(timeoutId);
+  }, [name]);
+
+  // Only create/update deck when debouncedName changes
+  useEffect(() => {
+    if (debouncedName.length < 1) return;
+
+    if (id === "new") {
+      createDeck.mutate({ name: debouncedName });
+    } else if (deck && debouncedName !== deck.name) {
+      updateDeck.mutate({ name: debouncedName });
+    }
+  }, [debouncedName, id, deck]);
 
   const updateDeck = useMutation({
     mutationFn: (updates: Partial<Deck>) =>
@@ -78,16 +100,7 @@ export default function DeckPage() {
   });
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newName = e.target.value;
-    setName(newName);
-
-    if (newName.length < 1) return;
-
-    if (id === "new") {
-      createDeck.mutate({ name: newName });
-    } else {
-      updateDeck.mutate({ name: newName });
-    }
+    setName(e.target.value);
   };
 
   const transformScryfallCard = (card: ScryfallCard): DeckCard => {
@@ -153,7 +166,6 @@ export default function DeckPage() {
               value={name}
               onChange={handleNameChange}
               className="text-xl sm:text-2xl font-bold"
-              disabled={createDeck.isPending}
             />
           </div>
           {id !== "new" && (
