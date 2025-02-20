@@ -7,6 +7,7 @@ import { createServer } from "http";
 export async function registerRoutes(app: Express) {
   const api = Router();
 
+  // Deck routes
   api.get("/decks", async (req, res) => {
     const decks = await storage.getAllDecks();
     res.json(decks);
@@ -47,6 +48,54 @@ export async function registerRoutes(app: Express) {
       return;
     }
     res.json({ success: true });
+  });
+
+  // Price history routes
+  api.get("/cards/:cardId/price-history", async (req, res) => {
+    const { cardId } = req.params;
+    const days = req.query.days ? parseInt(req.query.days as string) : undefined;
+    const history = await storage.getPriceHistory(cardId, days);
+    res.json(history);
+  });
+
+  // Price alerts routes
+  api.get("/price-alerts", async (req, res) => {
+    const { cardId } = req.query;
+    const alerts = await storage.getPriceAlerts(cardId as string | undefined);
+    res.json(alerts);
+  });
+
+  api.post("/price-alerts", async (req, res) => {
+    try {
+      const alert = await storage.createPriceAlert(req.body);
+      res.json(alert);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid alert data" });
+    }
+  });
+
+  api.patch("/price-alerts/:id", async (req, res) => {
+    const alert = await storage.updatePriceAlert(Number(req.params.id), req.body);
+    if (!alert) {
+      res.status(404).json({ message: "Alert not found" });
+      return;
+    }
+    res.json(alert);
+  });
+
+  // Card metadata routes
+  api.get("/cards/metadata/:cardId", async (req, res) => {
+    const metadata = await storage.getCardMetadata(req.params.cardId);
+    if (!metadata) {
+      res.status(404).json({ message: "Card metadata not found" });
+      return;
+    }
+    res.json(metadata);
+  });
+
+  api.get("/cards/format/:format", async (req, res) => {
+    const cards = await storage.getCardsByFormat(req.params.format);
+    res.json(cards);
   });
 
   // Wishlist routes
