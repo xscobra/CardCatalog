@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
-import { getCardPrints } from "@/lib/api";
+import { getCardPrints, getSetSymbolUrl } from "@/lib/api";
 import { Loader2 } from "lucide-react";
 
 interface PrintingsDialogProps {
@@ -40,7 +40,14 @@ export function PrintingsDialog({ cardName, open, onOpenChange }: PrintingsDialo
                       />
                     )}
                     <div className="mt-2 text-sm text-center">
-                      <p className="font-medium">{print.set_name}</p>
+                      <div className="flex items-center justify-center gap-2 mb-1">
+                        <img
+                          src={getSetSymbolUrl(print.set)}
+                          alt={print.set_name}
+                          className="w-6 h-6"
+                        />
+                        <p className="font-medium">{print.set_name}</p>
+                      </div>
                       <p className="text-muted-foreground">
                         ${print.prices.usd || "N/A"}
                       </p>
