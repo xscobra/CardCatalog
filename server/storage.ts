@@ -298,6 +298,7 @@ export class DatabaseStorage implements IStorage {
 
   async getCardRecommendations(cardIds: string[]): Promise<CardRecommendation[]> {
     try {
+      // Use array_agg to properly handle the array of card IDs
       const recommendations = await db
         .select({
           card: cardMetadata,
@@ -309,7 +310,7 @@ export class DatabaseStorage implements IStorage {
           cardMetadata,
           eq(cardMetadata.id, cardCombinations.combinedWithId)
         )
-        .where(sql`${cardCombinations.cardId} = ANY(${cardIds}::text[])`)
+        .where(sql`${cardCombinations.cardId} = ANY(ARRAY[${sql.join(cardIds, sql`, `)}]::text[])`)
         .orderBy(desc(cardCombinations.frequency))
         .limit(10);
 
@@ -328,8 +329,26 @@ export class DatabaseStorage implements IStorage {
     try {
       const alternatives = await db
         .select({
-          originalCard: cardMetadata,
-          budgetCard: cardMetadata,
+          originalCard: {
+            id: cardMetadata.id,
+            name: cardMetadata.name,
+            manaCost: cardMetadata.manaCost,
+            cmc: cardMetadata.cmc,
+            colors: cardMetadata.colors,
+            types: cardMetadata.types,
+            format_legality: cardMetadata.format_legality,
+            rarity: cardMetadata.rarity
+          },
+          budgetCard: {
+            id: sql<string>`bc.id`,
+            name: sql<string>`bc.name`,
+            manaCost: sql<string>`bc.mana_cost`,
+            cmc: sql<string>`bc.cmc`,
+            colors: sql<string[]>`bc.colors`,
+            types: sql<string[]>`bc.types`,
+            format_legality: sql<Record<string, string>>`bc.format_legality`,
+            rarity: sql<string>`bc.rarity`
+          },
           priceRatio: budgetAlternatives.priceRatio,
           similarityScore: budgetAlternatives.similarityScore
         })
@@ -339,14 +358,12 @@ export class DatabaseStorage implements IStorage {
           eq(cardMetadata.id, budgetAlternatives.expensiveCardId)
         )
         .innerJoin(
-          cardMetadata,
-          eq(cardMetadata.id, budgetAlternatives.budgetCardId)
-        )
-        .where(
+          cardMetadata.as('bc'),
           and(
+            eq(sql`bc.id`, budgetAlternatives.budgetCardId),
             eq(budgetAlternatives.expensiveCardId, cardId),
-            gt(budgetAlternatives.similarityScore, 0.7),
-            lt(budgetAlternatives.priceRatio, maxPriceRatio)
+            gt(budgetAlternatives.similarityScore, '0.7'),
+            lt(budgetAlternatives.priceRatio, maxPriceRatio.toString())
           )
         )
         .orderBy(desc(budgetAlternatives.similarityScore))
