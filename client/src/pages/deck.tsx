@@ -152,23 +152,17 @@ export default function DeckPage() {
   const handleCardMove = (card: DeckCard, toPickedUp: boolean) => {
     if (!deck) return;
 
-    let newCards = [...deck.cards];
-    let newPickedUp = [...deck.pickedUpCards];
-
-    newCards = newCards.filter((c) => c.id !== card.id);
-    newPickedUp = newPickedUp.filter((c) => c.id !== card.id);
+    const updatedDeck = { ...deck };
 
     if (toPickedUp) {
-      newPickedUp.push(card);
+      // Moving from deck to picked up
+      updatedDeck.cards = updatedDeck.cards.filter((c) => c.id !== card.id);
+      updatedDeck.pickedUpCards = [...updatedDeck.pickedUpCards, card];
     } else {
-      newCards.push(card);
+      // Removing card completely from picked up
+      updatedDeck.pickedUpCards = updatedDeck.pickedUpCards.filter((c) => c.id !== card.id);
     }
 
-    const updatedDeck = {
-      ...deck,
-      cards: newCards,
-      pickedUpCards: newPickedUp
-    };
     saveDeck(updatedDeck);
   };
 
