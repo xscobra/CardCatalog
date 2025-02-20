@@ -10,7 +10,8 @@ import {
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { PrintingsDialog } from "./printings-dialog";
-import { Search } from "lucide-react";
+import { SetSymbolsDialog } from "./set-symbols-dialog";
+import { Search, Layers } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +28,7 @@ interface CardRowProps {
 export function CardRow({ card, onRemove, onSetClick, onCardClick }: CardRowProps) {
   const [showPrintings, setShowPrintings] = useState(false);
   const [showImage, setShowImage] = useState(false);
+  const [showSets, setShowSets] = useState(false);
 
   return (
     <motion.div
@@ -53,30 +55,19 @@ export function CardRow({ card, onRemove, onSetClick, onCardClick }: CardRowProp
 
           <div className="flex items-center gap-4">
             <div className="flex gap-2">
-              {card.sets.map((set) => (
-                <TooltipProvider key={set.code}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="p-1"
-                        onClick={() => onSetClick(set.name)}
-                      >
-                        <img src={set.symbol} alt={set.name} className="w-6 h-6" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{set.name}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              ))}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowSets(true)}
+                className="gap-2"
+              >
+                <Layers className="h-4 w-4" />
+                Sets
+              </Button>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowPrintings(true)}
-                className="ml-2"
               >
                 <Search className="h-4 w-4" />
               </Button>
@@ -98,6 +89,13 @@ export function CardRow({ card, onRemove, onSetClick, onCardClick }: CardRowProp
         cardName={card.name}
         open={showPrintings}
         onOpenChange={setShowPrintings}
+      />
+
+      <SetSymbolsDialog
+        cardName={card.name}
+        sets={card.sets}
+        open={showSets}
+        onOpenChange={setShowSets}
       />
 
       <Dialog open={showImage} onOpenChange={setShowImage}>
