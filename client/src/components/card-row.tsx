@@ -5,7 +5,10 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import { PrintingsDialog } from "./printings-dialog";
 import { SetSymbolsDialog } from "./set-symbols-dialog";
-import { Search, Layers, MoreVertical } from "lucide-react";
+import { PriceHistoryDialog } from "./price-history-dialog";
+import { PriceAlertDialog } from "./price-alert-dialog";
+import { useQuery } from "@tanstack/react-query";
+import { Search, Layers, MoreVertical, LineChart, Bell, Award } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -17,18 +20,35 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface CardRowProps {
   card: DeckCard;
   onRemove: () => void;
   onSetClick: (setName: string) => void;
   onCardClick: () => void;
+  format?: string;
 }
 
-export function CardRow({ card, onRemove, onSetClick, onCardClick }: CardRowProps) {
+export function CardRow({ card, onRemove, onSetClick, onCardClick, format }: CardRowProps) {
   const [showPrintings, setShowPrintings] = useState(false);
   const [showImage, setShowImage] = useState(false);
   const [showSets, setShowSets] = useState(false);
+  const [showPriceHistory, setShowPriceHistory] = useState(false);
+  const [showPriceAlert, setShowPriceAlert] = useState(false);
+
+  const { data: metadata } = useQuery({
+    queryKey: ["/api/cards/metadata", card.id],
+    queryFn: () =>
+      fetch(`/api/cards/metadata/${card.id}`).then((res) => res.json()),
+    enabled: !!format,
+  });
+
+  const isLegal = format && metadata?.format_legality?.[format] === 'legal';
 
   return (
     <motion.div
@@ -49,7 +69,25 @@ export function CardRow({ card, onRemove, onSetClick, onCardClick }: CardRowProp
                   onClick={() => setShowImage(true)}
                 />
               )}
-              <span className="font-medium flex-1">{card.name}</span>
+              <div className="flex-1">
+                <span className="font-medium">{card.name}</span>
+                {format && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Award
+                        className={`ml-2 h-4 w-4 inline-block ${
+                          isLegal ? "text-green-500" : "text-red-500"
+                        }`}
+                      />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {isLegal
+                        ? `Legal in ${format}`
+                        : `Not legal in ${format}`}
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center justify-between sm:justify-end gap-4 mt-2 sm:mt-0">
@@ -70,6 +108,12 @@ export function CardRow({ card, onRemove, onSetClick, onCardClick }: CardRowProp
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setShowPrintings(true)}>
                       View Printings
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setShowPriceHistory(true)}>
+                      Price History
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setShowPriceAlert(true)}>
+                      Set Price Alert
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={onRemove} className="text-destructive">
                       Remove
@@ -96,6 +140,20 @@ export function CardRow({ card, onRemove, onSetClick, onCardClick }: CardRowProp
                     onClick={() => setShowPrintings(true)}
                   >
                     <Search className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowPriceHistory(true)}
+                  >
+                    <LineChart className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowPriceAlert(true)}
+                  >
+                    <Bell className="h-4 w-4" />
                   </Button>
                 </div>
 
@@ -124,6 +182,21 @@ export function CardRow({ card, onRemove, onSetClick, onCardClick }: CardRowProp
         cardName={card.name}
         open={showSets}
         onOpenChange={setShowSets}
+      />
+
+      <PriceHistoryDialog
+        cardId={card.id}
+        cardName={card.name}
+        open={showPriceHistory}
+        onOpenChange={setShowPriceHistory}
+      />
+
+      <PriceAlertDialog
+        cardId={card.id}
+        cardName={card.name}
+        currentPrice={card.prices.tcgplayer}
+        open={showPriceAlert}
+        onOpenChange={setShowPriceAlert}
       />
 
       <Dialog open={showImage} onOpenChange={setShowImage}>
