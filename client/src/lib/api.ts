@@ -1,12 +1,19 @@
 import axios from "axios";
 import { z } from "zod";
 
+const cardFaceSchema = z.object({
+  image_uris: z.object({
+    normal: z.string()
+  }).optional()
+});
+
 const scryfallCardSchema = z.object({
   id: z.string(),
   name: z.string(),
   image_uris: z.object({
     normal: z.string()
   }).optional(),
+  card_faces: z.array(cardFaceSchema).optional(),
   prices: z.object({
     usd: z.string().nullable(),
     usd_foil: z.string().nullable()
@@ -35,4 +42,18 @@ export const getCardPrints = async (cardName: string) => {
 
 export const getSetSymbolUrl = (setCode: string) => {
   return `https://svgs.scryfall.io/sets/${setCode}.svg`;
+};
+
+export const getCardImageUrl = (card: ScryfallCard): string => {
+  // For regular cards, use the main image_uris
+  if (card.image_uris?.normal) {
+    return card.image_uris.normal;
+  }
+
+  // For dual-faced cards, use the front face image
+  if (card.card_faces?.[0]?.image_uris?.normal) {
+    return card.card_faces[0].image_uris.normal;
+  }
+
+  return "";
 };
