@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Deck } from "@shared/schema";
+import { WishlistSection } from "@/components/wishlist-section";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -20,7 +21,8 @@ import { useState } from "react";
 
 export default function Home() {
   const { data: decks } = useQuery<Deck[]>({
-    queryKey: ["/api/decks"]
+    queryKey: ["/api/decks"],
+    refetchInterval: 2000 // Poll for updates every 2 seconds
   });
   const { toast } = useToast();
   const [deckToDelete, setDeckToDelete] = useState<Deck | null>(null);
@@ -75,6 +77,8 @@ export default function Home() {
           </Card>
         ))}
       </div>
+
+      <WishlistSection />
 
       <AlertDialog
         open={!!deckToDelete}

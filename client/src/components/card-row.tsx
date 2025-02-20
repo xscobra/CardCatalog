@@ -1,7 +1,12 @@
 import { DeckCard } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tooltip } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { motion } from "framer-motion";
 
 interface CardRowProps {
@@ -24,23 +29,30 @@ export function CardRow({ card, onRemove, onSetClick, onCardClick }: CardRowProp
           <Button variant="ghost" onClick={onCardClick} className="font-medium">
             {card.name}
           </Button>
-          
+
           <div className="flex items-center gap-4">
             <div className="flex gap-2">
               {card.sets.map((set) => (
-                <Tooltip key={set.code} content={set.name}>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="p-1"
-                    onClick={() => onSetClick(set.name)}
-                  >
-                    <img src={set.symbol} alt={set.name} className="w-6 h-6" />
-                  </Button>
-                </Tooltip>
+                <TooltipProvider key={set.code}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="p-1"
+                        onClick={() => onSetClick(set.name)}
+                      >
+                        <img src={set.symbol} alt={set.name} className="w-6 h-6" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{set.name}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               ))}
             </div>
-            
+
             <div className="text-sm">
               <span className="mr-4">TCG: ${card.prices.tcgplayer || "N/A"}</span>
               <span>CK: ${card.prices.cardkingdom || "N/A"}</span>
