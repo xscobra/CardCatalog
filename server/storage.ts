@@ -26,7 +26,20 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   async getDeck(id: number): Promise<Deck | undefined> {
     try {
-      const [deck] = await db.select().from(decks).where(eq(decks.id, id));
+      // Optimize by selecting only necessary fields
+      const [deck] = await db
+        .select({
+          id: decks.id,
+          name: decks.name,
+          description: decks.description,
+          cards: decks.cards,
+          pickedUpCards: decks.pickedUpCards,
+          format: decks.format,
+          isValid: decks.isValid,
+          notes: decks.notes
+        })
+        .from(decks)
+        .where(eq(decks.id, id));
       return deck;
     } catch (error) {
       console.error('Error getting deck:', error);
@@ -36,7 +49,17 @@ export class DatabaseStorage implements IStorage {
 
   async getAllDecks(): Promise<Deck[]> {
     try {
-      return await db.select().from(decks);
+      // Optimize by selecting only necessary fields for listing
+      return await db
+        .select({
+          id: decks.id,
+          name: decks.name,
+          cards: decks.cards,
+          pickedUpCards: decks.pickedUpCards,
+          format: decks.format,
+          isValid: decks.isValid
+        })
+        .from(decks);
     } catch (error) {
       console.error('Error getting all decks:', error);
       throw error;
@@ -89,7 +112,10 @@ export class DatabaseStorage implements IStorage {
 
   async getWishlistCards(): Promise<DeckCard[]> {
     try {
-      const [wishlist] = await db.select().from(wishlistCards);
+      // Optimize by selecting only the cards field
+      const [wishlist] = await db
+        .select({ cards: wishlistCards.cards })
+        .from(wishlistCards);
       return wishlist?.cards || [];
     } catch (error) {
       console.error('Error getting wishlist cards:', error);
@@ -99,19 +125,22 @@ export class DatabaseStorage implements IStorage {
 
   async updateWishlistCards(cards: DeckCard[]): Promise<DeckCard[]> {
     try {
-      const [wishlist] = await db.select().from(wishlistCards);
+      const [wishlist] = await db
+        .select({ id: wishlistCards.id })
+        .from(wishlistCards);
+
       if (wishlist) {
         const [updated] = await db
           .update(wishlistCards)
           .set({ cards })
           .where(eq(wishlistCards.id, wishlist.id))
-          .returning();
+          .returning({ cards: wishlistCards.cards });
         return updated.cards;
       } else {
         const [created] = await db
           .insert(wishlistCards)
           .values({ cards })
-          .returning();
+          .returning({ cards: wishlistCards.cards });
         return created.cards;
       }
     } catch (error) {
@@ -140,7 +169,13 @@ export class DatabaseStorage implements IStorage {
     cutoffDate.setDate(cutoffDate.getDate() - days);
 
     const results = await db
-      .select()
+      .select({
+        id: priceHistory.id,
+        cardId: priceHistory.cardId,
+        source: priceHistory.source,
+        price: priceHistory.price,
+        timestamp: priceHistory.timestamp
+      })
       .from(priceHistory)
       .where(
         and(
@@ -160,7 +195,7 @@ export class DatabaseStorage implements IStorage {
           id: i,
           cardId,
           source: 'tcgplayer',
-          price: 10 + Math.random() * 5, // Random price between 10 and 15
+          price: 10 + Math.random() * 5,
           timestamp: date
         });
       }
