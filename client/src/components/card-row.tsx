@@ -60,42 +60,51 @@ export function CardRow({ card, onRemove, onSetClick, onCardClick, format }: Car
       <Card className="mb-2">
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <div className="flex items-center gap-4 flex-1">
+            {/* Card Info Section */}
+            <div className="flex items-center gap-4 min-w-0">
               {card.imageUrl && (
                 <img
                   src={card.imageUrl}
                   alt={card.name}
-                  className="w-12 h-12 object-cover rounded cursor-pointer"
+                  className="w-12 h-12 object-cover rounded cursor-pointer shrink-0"
                   onClick={() => setShowImage(true)}
                 />
               )}
-              <div className="flex-1">
-                <span className="font-medium">{card.name}</span>
-                {format && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Award
-                        className={`ml-2 h-4 w-4 inline-block ${
-                          isLegal ? "text-green-500" : "text-red-500"
-                        }`}
-                      />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      {isLegal
-                        ? `Legal in ${format}`
-                        : `Not legal in ${format}`}
-                    </TooltipContent>
-                  </Tooltip>
-                )}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium truncate">{card.name}</span>
+                  {format && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Award
+                          className={`h-4 w-4 shrink-0 ${
+                            isLegal ? "text-green-500" : "text-red-500"
+                          }`}
+                        />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {isLegal
+                          ? `Legal in ${format}`
+                          : `Not legal in ${format}`}
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
+                <div className="text-sm text-muted-foreground mt-1">
+                  TCG: ${card.prices.tcgplayer?.toFixed(2) || "N/A"}
+                  {card.prices.cardkingdom && (
+                    <span className="ml-2">
+                      • CK: ${card.prices.cardkingdom.toFixed(2)}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
-            <div className="flex items-center justify-between sm:justify-end gap-4 mt-2 sm:mt-0">
+            {/* Actions Section */}
+            <div className="flex items-center justify-between sm:justify-end gap-4">
               {/* Mobile view */}
               <div className="flex sm:hidden items-center gap-2">
-                <span className="text-sm">
-                  ${card.prices.tcgplayer?.toFixed(2) || "N/A"}
-                </span>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="sm">
@@ -123,44 +132,59 @@ export function CardRow({ card, onRemove, onSetClick, onCardClick, format }: Car
               </div>
 
               {/* Desktop view */}
-              <div className="hidden sm:flex items-center gap-4">
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowSets(true)}
-                    className="gap-2"
-                  >
-                    <Layers className="h-4 w-4" />
-                    Sets
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowPrintings(true)}
-                  >
-                    <Search className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowPriceHistory(true)}
-                  >
-                    <LineChart className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowPriceAlert(true)}
-                  >
-                    <Bell className="h-4 w-4" />
-                  </Button>
-                </div>
+              <div className="hidden sm:flex items-center gap-2">
+                <div className="flex gap-1">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowSets(true)}
+                      >
+                        <Layers className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>View Sets</TooltipContent>
+                  </Tooltip>
 
-                <div className="text-sm flex items-center space-x-2">
-                  <span>TCG: ${card.prices.tcgplayer?.toFixed(2) || "N/A"}</span>
-                  <span className="text-muted-foreground">|</span>
-                  <span>CK: ${card.prices.cardkingdom?.toFixed(2) || "N/A"}</span>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowPrintings(true)}
+                      >
+                        <Search className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>View Printings</TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowPriceHistory(true)}
+                      >
+                        <LineChart className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Price History</TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowPriceAlert(true)}
+                      >
+                        <Bell className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Set Price Alert</TooltipContent>
+                  </Tooltip>
                 </div>
 
                 <Button variant="destructive" size="sm" onClick={onRemove}>
