@@ -61,6 +61,18 @@ export function WishlistSection() {
     updateWishlist.mutate(cards.filter(c => c.id !== cardId));
   };
 
+  const handlePriceUpdate = (cardId: string, newPrices: { tcgplayer: number | null; cardkingdom: number | null }) => {
+    const updatedCards = cards.map(card =>
+      card.id === cardId
+        ? { ...card, prices: newPrices }
+        : card
+    );
+
+    if (JSON.stringify(updatedCards) !== JSON.stringify(cards)) {
+      updateWishlist.mutate(updatedCards);
+    }
+  };
+
   // Calculate total prices for the wishlist
   const totalPrices = cards.reduce(
     (totals, card) => ({
@@ -89,6 +101,7 @@ export function WishlistSection() {
                   onRemove={() => handleRemoveCard(card.id)}
                   onSetClick={() => {}}
                   onCardClick={() => {}}
+                  onPriceUpdate={handlePriceUpdate}
                 />
               ))}
             </ScrollArea>

@@ -15,9 +15,17 @@ interface DeckListProps {
     tcgplayer: number;
     cardkingdom: number;
   };
+  onPriceUpdate?: (cardId: string, newPrices: { tcgplayer: number | null; cardkingdom: number | null }) => void;
 }
 
-export function DeckList({ cards, pickedUpCards, onCardMove, format, totalPrices }: DeckListProps) {
+export function DeckList({ 
+  cards, 
+  pickedUpCards, 
+  onCardMove, 
+  format, 
+  totalPrices,
+  onPriceUpdate 
+}: DeckListProps) {
   const [selectedCard, setSelectedCard] = useState<DeckCard | null>(null);
   const [selectedSet, setSelectedSet] = useState<string | null>(null);
 
@@ -53,6 +61,7 @@ export function DeckList({ cards, pickedUpCards, onCardMove, format, totalPrices
                 onSetClick={setSelectedSet}
                 onCardClick={() => setSelectedCard(card)}
                 format={format}
+                onPriceUpdate={onPriceUpdate}
               />
             ))}
           </ScrollArea>
@@ -69,6 +78,7 @@ export function DeckList({ cards, pickedUpCards, onCardMove, format, totalPrices
                 onSetClick={setSelectedSet}
                 onCardClick={() => setSelectedCard(card)}
                 format={format}
+                onPriceUpdate={onPriceUpdate}
               />
             ))}
           </ScrollArea>
@@ -98,6 +108,7 @@ export function DeckList({ cards, pickedUpCards, onCardMove, format, totalPrices
                   onSetClick={setSelectedSet}
                   onCardClick={() => setSelectedCard(card)}
                   format={format}
+                  onPriceUpdate={onPriceUpdate}
                 />
               ))}
             </ScrollArea>
@@ -112,6 +123,7 @@ export function DeckList({ cards, pickedUpCards, onCardMove, format, totalPrices
                   onSetClick={setSelectedSet}
                   onCardClick={() => setSelectedCard(card)}
                   format={format}
+                  onPriceUpdate={onPriceUpdate}
                 />
               ))}
             </ScrollArea>
