@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import { CardSearch } from "@/components/card-search";
 import { DeckList } from "@/components/deck-list";
@@ -11,9 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useState, useEffect } from "react";
-import { Download, Upload, ArrowLeft, Trash2 } from "lucide-react";
+import { Download, ArrowLeft, Trash2 } from "lucide-react";
 import type { Deck, DeckCard } from "@shared/schema";
 import type { ScryfallCard } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
@@ -27,6 +25,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
+import { loadDecksFromLocal, saveDecksToLocal } from "@/lib/localStorage";
 
 const FORMATS = [
   { value: "standard", label: "Standard" },
@@ -42,86 +41,59 @@ export default function DeckPage() {
   const { id } = useParams();
   const [, setLocation] = useLocation();
   const [name, setName] = useState("");
-  const [debouncedName, setDebouncedName] = useState("");
+  const [deck, setDeck] = useState<Deck | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { toast } = useToast();
 
-  const { data: deck } = useQuery<Deck>({
-    queryKey: [`/api/decks/${id}`],
-    enabled: id !== "new"
-  });
-
   useEffect(() => {
-    if (deck) {
-      setName(deck.name);
-      setDebouncedName(deck.name);
+    if (id === "new") return;
+
+    const decks = loadDecksFromLocal();
+    const foundDeck = decks.find(d => d.id === Number(id));
+    if (foundDeck) {
+      setDeck(foundDeck);
+      setName(foundDeck.name);
     }
-  }, [deck]);
+  }, [id]);
 
-  // Debounce the name changes
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      setDebouncedName(name);
-    }, 500);
+  const saveDeck = (updatedDeck: Deck) => {
+    const decks = loadDecksFromLocal();
+    const index = decks.findIndex(d => d.id === updatedDeck.id);
 
-    return () => clearTimeout(timeoutId);
-  }, [name]);
-
-  // Only create/update deck when debouncedName changes
-  useEffect(() => {
-    if (debouncedName.length < 1) return;
-
-    if (id === "new") {
-      createDeck.mutate({ name: debouncedName });
-    } else if (deck && debouncedName !== deck.name) {
-      updateDeck.mutate({ name: debouncedName });
+    if (index >= 0) {
+      decks[index] = updatedDeck;
+    } else {
+      decks.push(updatedDeck);
     }
-  }, [debouncedName, id, deck]);
 
-  const updateDeck = useMutation({
-    mutationFn: (updates: Partial<Deck>) =>
-      apiRequest("PATCH", `/api/decks/${id}`, updates),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/decks/${id}`] });
-      toast({
-        title: "Deck Updated",
-        description: "Your changes have been saved."
-      });
-    }
-  });
-
-  const createDeck = useMutation({
-    mutationFn: (data: Partial<Deck>) =>
-      apiRequest("POST", "/api/decks", data),
-    onSuccess: async (response) => {
-      const newDeck = await response.json();
-      queryClient.invalidateQueries({ queryKey: ["/api/decks"] });
-      setLocation(`/deck/${newDeck.id}`);
-      toast({
-        title: "Deck Created",
-        description: "Your new deck has been created successfully."
-      });
-    }
-  });
-
-  const deleteDeck = useMutation({
-    mutationFn: () => apiRequest("DELETE", `/api/decks/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/decks"] });
-      setLocation("/");
-      toast({
-        title: "Deck Deleted",
-        description: "The deck has been deleted successfully."
-      });
-    }
-  });
+    saveDecksToLocal(decks);
+    setDeck(updatedDeck);
+  };
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setName(e.target.value);
+    if (deck) {
+      const updatedDeck = { ...deck, name: e.target.value };
+      saveDeck(updatedDeck);
+    }
   };
 
   const handleFormatChange = (format: string) => {
-    updateDeck.mutate({ format });
+    if (deck) {
+      const updatedDeck = { ...deck, format };
+      saveDeck(updatedDeck);
+    }
+  };
+
+  const handleDeleteDeck = () => {
+    const decks = loadDecksFromLocal();
+    const updatedDecks = decks.filter(d => d.id !== Number(id));
+    saveDecksToLocal(updatedDecks);
+    setLocation("/");
+    toast({
+      title: "Deck Deleted",
+      description: "The deck has been deleted successfully."
+    });
   };
 
   const transformScryfallCard = (card: ScryfallCard): DeckCard => {
@@ -141,22 +113,86 @@ export default function DeckPage() {
     };
   };
 
+  const handleCardSelect = (card: ScryfallCard) => {
+    if (!deck) {
+      if (!name.trim()) {
+        toast({
+          title: "Name Required",
+          description: "Please name your deck before adding cards.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Create new deck
+      const decks = loadDecksFromLocal();
+      const newDeck: Deck = {
+        id: Date.now(),
+        name,
+        format: null,
+        description: null,
+        cards: [transformScryfallCard(card)],
+        pickedUpCards: [],
+        isValid: null,
+        notes: null,
+      };
+      saveDeck(newDeck);
+      setLocation(`/deck/${newDeck.id}`);
+      return;
+    }
+
+    const transformedCard = transformScryfallCard(card);
+    const updatedDeck = {
+      ...deck,
+      cards: [...deck.cards, transformedCard]
+    };
+    saveDeck(updatedDeck);
+  };
+
   const handleCardMove = (card: DeckCard, toPickedUp: boolean) => {
     if (!deck) return;
 
     let newCards = [...deck.cards];
     let newPickedUp = [...deck.pickedUpCards];
 
-    // Remove the card from both lists first
     newCards = newCards.filter((c) => c.id !== card.id);
     newPickedUp = newPickedUp.filter((c) => c.id !== card.id);
 
-    // Only add to the destination list if we're moving (not removing)
     if (toPickedUp) {
       newPickedUp.push(card);
+    } else {
+      newCards.push(card);
     }
 
-    updateDeck.mutate({ cards: newCards, pickedUpCards: newPickedUp });
+    const updatedDeck = {
+      ...deck,
+      cards: newCards,
+      pickedUpCards: newPickedUp
+    };
+    saveDeck(updatedDeck);
+  };
+
+  const handlePriceUpdate = (cardId: string, newPrices: { tcgplayer: number | null; cardkingdom: number | null }) => {
+    if (!deck) return;
+
+    const updateCardInList = (list: DeckCard[]) =>
+      list.map((card) =>
+        card.id === cardId
+          ? { ...card, prices: newPrices }
+          : card
+      );
+
+    const newCards = updateCardInList(deck.cards);
+    const newPickedUpCards = updateCardInList(deck.pickedUpCards);
+
+    if (JSON.stringify([...newCards, ...newPickedUpCards]) !== JSON.stringify([...deck.cards, ...deck.pickedUpCards])) {
+      const updatedDeck = {
+        ...deck,
+        cards: newCards,
+        pickedUpCards: newPickedUpCards
+      };
+      saveDeck(updatedDeck);
+    }
   };
 
   const exportDeck = () => {
@@ -173,24 +209,6 @@ export default function DeckPage() {
     a.click();
   };
 
-  const handleCardSelect = (card: ScryfallCard) => {
-    if (!deck) {
-      if (!name.trim()) {
-        toast({
-          title: "Name Required",
-          description: "Please name your deck before adding cards.",
-          variant: "destructive"
-        });
-        return;
-      }
-      return;
-    }
-    const transformedCard = transformScryfallCard(card);
-    updateDeck.mutate({
-      cards: [...deck.cards, transformedCard]
-    });
-  };
-
   // Calculate total prices for the deck
   const calculateTotalPrices = () => {
     if (!deck) return { tcgplayer: 0, cardkingdom: 0 };
@@ -205,27 +223,6 @@ export default function DeckPage() {
   };
 
   const { tcgplayer: totalTcg, cardkingdom: totalCk } = calculateTotalPrices();
-
-  const handlePriceUpdate = (cardId: string, newPrices: { tcgplayer: number | null; cardkingdom: number | null }) => {
-    if (!deck) return;
-
-    const updateCardInList = (list: DeckCard[]) =>
-      list.map((card) =>
-        card.id === cardId
-          ? { ...card, prices: newPrices }
-          : card
-      );
-
-    const newCards = updateCardInList(deck.cards);
-    const newPickedUpCards = updateCardInList(deck.pickedUpCards);
-
-    if (JSON.stringify([...newCards, ...newPickedUpCards]) !== JSON.stringify([...deck.cards, ...deck.pickedUpCards])) {
-      updateDeck.mutate({ 
-        cards: newCards,
-        pickedUpCards: newPickedUpCards
-      });
-    }
-  };
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 min-h-screen">
@@ -297,7 +294,7 @@ export default function DeckPage() {
             cards={deck?.cards || []}
             pickedUpCards={deck?.pickedUpCards || []}
             onCardMove={handleCardMove}
-            format={deck?.format}
+            format={deck?.format || undefined}
             totalPrices={{ tcgplayer: totalTcg, cardkingdom: totalCk }}
             onPriceUpdate={handlePriceUpdate}
           />
@@ -305,7 +302,7 @@ export default function DeckPage() {
       </div>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent className="sm:max-w-[425px]">
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -317,7 +314,7 @@ export default function DeckPage() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                deleteDeck.mutate();
+                handleDeleteDeck();
                 setShowDeleteDialog(false);
               }}
             >
