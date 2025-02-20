@@ -1,6 +1,7 @@
-import { decks, wishlistCards, type Deck, type InsertDeck, type DeckCard } from "@shared/schema";
+import { decks, wishlistCards, priceHistory, priceAlerts, cardMetadata, 
+  type Deck, type InsertDeck, type DeckCard, type PriceAlert, type PriceHistory } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 
 export interface IStorage {
   getDeck(id: number): Promise<Deck | undefined>;
@@ -10,6 +11,16 @@ export interface IStorage {
   deleteDeck(id: number): Promise<boolean>;
   getWishlistCards(): Promise<DeckCard[]>;
   updateWishlistCards(cards: DeckCard[]): Promise<DeckCard[]>;
+
+  addPriceHistory(cardId: string, source: string, price: number): Promise<PriceHistory>;
+  getPriceHistory(cardId: string, days?: number): Promise<PriceHistory[]>;
+  createPriceAlert(alert: Omit<PriceAlert, 'id'>): Promise<PriceAlert>;
+  getPriceAlerts(cardId?: string): Promise<PriceAlert[]>;
+  updatePriceAlert(id: number, updates: Partial<PriceAlert>): Promise<PriceAlert | undefined>;
+
+  upsertCardMetadata(metadata: typeof cardMetadata.$inferInsert): Promise<typeof cardMetadata.$inferSelect>;
+  getCardMetadata(cardId: string): Promise<typeof cardMetadata.$inferSelect | undefined>;
+  getCardsByFormat(format: string): Promise<typeof cardMetadata.$inferSelect[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -68,6 +79,114 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return created.cards;
     }
+  }
+
+  async addPriceHistory(cardId: string, source: string, price: number): Promise<PriceHistory> {
+    const [history] = await db
+      .insert(priceHistory)
+      .values({ 
+        cardId, 
+        source, 
+        price: price.toString()  // Convert to string for decimal type
+      })
+      .returning();
+    return {
+      ...history,
+      price: parseFloat(history.price) // Convert back to number for the interface
+    };
+  }
+
+  async getPriceHistory(cardId: string, days = 30): Promise<PriceHistory[]> {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - days);
+
+    const results = await db
+      .select()
+      .from(priceHistory)
+      .where(
+        and(
+          eq(priceHistory.cardId, cardId),
+          sql`${priceHistory.timestamp} >= ${cutoffDate}`
+        )
+      )
+      .orderBy(desc(priceHistory.timestamp));
+
+    return results.map(history => ({
+      ...history,
+      price: parseFloat(history.price) // Convert price strings to numbers
+    }));
+  }
+
+  async createPriceAlert(alert: Omit<PriceAlert, 'id'>): Promise<PriceAlert> {
+    const [created] = await db
+      .insert(priceAlerts)
+      .values({
+        ...alert,
+        targetPrice: alert.targetPrice.toString() // Convert to string for decimal type
+      })
+      .returning();
+    return {
+      ...created,
+      targetPrice: parseFloat(created.targetPrice) // Convert back to number for the interface
+    };
+  }
+
+  async getPriceAlerts(cardId?: string): Promise<PriceAlert[]> {
+    let query = db.select().from(priceAlerts);
+    if (cardId) {
+      query = query.where(eq(priceAlerts.cardId, cardId));
+    }
+    const results = await query;
+    return results.map(alert => ({
+      ...alert,
+      targetPrice: parseFloat(alert.targetPrice) // Convert price strings to numbers
+    }));
+  }
+
+  async updatePriceAlert(id: number, updates: Partial<PriceAlert>): Promise<PriceAlert | undefined> {
+    const updatesWithStringPrice = updates.targetPrice !== undefined
+      ? { ...updates, targetPrice: updates.targetPrice.toString() }
+      : updates;
+
+    const [alert] = await db
+      .update(priceAlerts)
+      .set(updatesWithStringPrice)
+      .where(eq(priceAlerts.id, id))
+      .returning();
+
+    if (!alert) return undefined;
+
+    return {
+      ...alert,
+      targetPrice: parseFloat(alert.targetPrice) // Convert back to number for the interface
+    };
+  }
+
+  async upsertCardMetadata(metadata: typeof cardMetadata.$inferInsert) {
+    const [updated] = await db
+      .insert(cardMetadata)
+      .values(metadata)
+      .onConflictDoUpdate({
+        target: cardMetadata.id,
+        set: metadata,
+      })
+      .returning();
+    return updated;
+  }
+
+  async getCardMetadata(cardId: string) {
+    const [metadata] = await db
+      .select()
+      .from(cardMetadata)
+      .where(eq(cardMetadata.id, cardId));
+    return metadata;
+  }
+
+  async getCardsByFormat(format: string) {
+    return await db
+      .select()
+      .from(cardMetadata)
+      .where(sql`${cardMetadata.format_legality}->>${format} = 'legal'`);
   }
 }
 
