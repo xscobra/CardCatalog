@@ -61,6 +61,15 @@ export function WishlistSection() {
     updateWishlist.mutate(cards.filter(c => c.id !== cardId));
   };
 
+  // Calculate total prices for the wishlist
+  const totalPrices = cards.reduce(
+    (totals, card) => ({
+      tcgplayer: totals.tcgplayer + (card.prices.tcgplayer || 0),
+      cardkingdom: totals.cardkingdom + (card.prices.cardkingdom || 0),
+    }),
+    { tcgplayer: 0, cardkingdom: 0 }
+  );
+
   return (
     <Card className="mt-8">
       <CardHeader>
@@ -71,7 +80,7 @@ export function WishlistSection() {
           <div>
             <CardSearch onCardSelect={handleAddCard} />
           </div>
-          <div>
+          <div className="space-y-4">
             <ScrollArea className="h-[400px]">
               {cards.map((card) => (
                 <CardRow
@@ -83,6 +92,26 @@ export function WishlistSection() {
                 />
               ))}
             </ScrollArea>
+
+            {/* Price totals footer */}
+            <Card>
+              <CardContent className="p-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">TCGplayer Total:</span>
+                    <span className="text-lg font-bold">
+                      ${totalPrices.tcgplayer.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Card Kingdom Total:</span>
+                    <span className="text-lg font-bold">
+                      ${totalPrices.cardkingdom.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </CardContent>
