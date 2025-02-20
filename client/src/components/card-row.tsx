@@ -1,7 +1,7 @@
 import { DeckCard } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { motion } from "framer-motion";
+import { motion, PanInfo } from "framer-motion";
 import { useState } from "react";
 import { PrintingsDialog } from "./printings-dialog";
 import { SetSymbolsDialog } from "./set-symbols-dialog";
@@ -40,6 +40,7 @@ export function CardRow({ card, onRemove, onSetClick, onCardClick, format }: Car
   const [showSets, setShowSets] = useState(false);
   const [showPriceHistory, setShowPriceHistory] = useState(false);
   const [showPriceAlert, setShowPriceAlert] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   const { data: metadata } = useQuery({
     queryKey: ["/api/cards/metadata", card.id],
@@ -50,34 +51,53 @@ export function CardRow({ card, onRemove, onSetClick, onCardClick, format }: Car
 
   const isLegal = format && metadata?.format_legality?.[format] === 'legal';
 
+  const handleDragEnd = (_: any, info: PanInfo) => {
+    if (Math.abs(info.offset.x) > 100) {
+      // If dragged left, remove the card
+      if (info.offset.x < 0) {
+        onRemove();
+      }
+    }
+    setIsDragging(false);
+  };
+
   return (
     <motion.div
       layout
+      drag="x"
+      dragConstraints={{ left: 0, right: 0 }}
+      dragElastic={0.7}
+      onDragStart={() => setIsDragging(true)}
+      onDragEnd={handleDragEnd}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
+      whileTap={{ scale: 0.98 }}
     >
-      <Card className="mb-2">
-        <CardContent className="p-4">
+      <Card className="mb-4">
+        <CardContent className="p-6">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             {/* Card Info Section */}
-            <div className="flex items-center gap-4 min-w-0">
+            <div className="flex items-center gap-4 min-w-0" onClick={() => !isDragging && onCardClick()}>
               {card.imageUrl && (
                 <img
                   src={card.imageUrl}
                   alt={card.name}
-                  className="w-12 h-12 object-cover rounded cursor-pointer shrink-0"
-                  onClick={() => setShowImage(true)}
+                  className="w-16 h-16 object-cover rounded cursor-pointer shrink-0 touch-manipulation"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowImage(true);
+                  }}
                 />
               )}
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium truncate">{card.name}</span>
+                  <span className="text-lg font-medium truncate">{card.name}</span>
                   {format && (
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Award
-                          className={`h-4 w-4 shrink-0 ${
+                          className={`h-5 w-5 shrink-0 ${
                             isLegal ? "text-green-500" : "text-red-500"
                           }`}
                         />
@@ -90,10 +110,10 @@ export function CardRow({ card, onRemove, onSetClick, onCardClick, format }: Car
                     </Tooltip>
                   )}
                 </div>
-                <div className="text-sm text-muted-foreground mt-1">
+                <div className="text-base text-muted-foreground mt-2">
                   TCG: ${card.prices.tcgplayer?.toFixed(2) || "N/A"}
                   {card.prices.cardkingdom && (
-                    <span className="ml-2">
+                    <span className="ml-3">
                       • CK: ${card.prices.cardkingdom.toFixed(2)}
                     </span>
                   )}
@@ -104,27 +124,27 @@ export function CardRow({ card, onRemove, onSetClick, onCardClick, format }: Car
             {/* Actions Section */}
             <div className="flex items-center justify-between sm:justify-end gap-4">
               {/* Mobile view */}
-              <div className="flex sm:hidden items-center gap-2">
+              <div className="flex sm:hidden items-center">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <MoreVertical className="h-4 w-4" />
+                    <Button variant="ghost" size="lg" className="p-3">
+                      <MoreVertical className="h-6 w-6" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setShowSets(true)}>
-                      View Sets
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem onClick={() => setShowSets(true)} className="py-3">
+                      <Layers className="mr-2 h-5 w-5" /> View Sets
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setShowPrintings(true)}>
-                      View Printings
+                    <DropdownMenuItem onClick={() => setShowPrintings(true)} className="py-3">
+                      <Search className="mr-2 h-5 w-5" /> View Printings
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setShowPriceHistory(true)}>
-                      Price History
+                    <DropdownMenuItem onClick={() => setShowPriceHistory(true)} className="py-3">
+                      <LineChart className="mr-2 h-5 w-5" /> Price History
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setShowPriceAlert(true)}>
-                      Set Price Alert
+                    <DropdownMenuItem onClick={() => setShowPriceAlert(true)} className="py-3">
+                      <Bell className="mr-2 h-5 w-5" /> Set Price Alert
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={onRemove} className="text-destructive">
+                    <DropdownMenuItem onClick={onRemove} className="text-destructive py-3">
                       Remove
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -138,10 +158,11 @@ export function CardRow({ card, onRemove, onSetClick, onCardClick, format }: Car
                     <TooltipTrigger asChild>
                       <Button
                         variant="ghost"
-                        size="sm"
+                        size="lg"
                         onClick={() => setShowSets(true)}
+                        className="p-3"
                       >
-                        <Layers className="h-4 w-4" />
+                        <Layers className="h-5 w-5" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>View Sets</TooltipContent>
@@ -151,10 +172,11 @@ export function CardRow({ card, onRemove, onSetClick, onCardClick, format }: Car
                     <TooltipTrigger asChild>
                       <Button
                         variant="ghost"
-                        size="sm"
+                        size="lg"
                         onClick={() => setShowPrintings(true)}
+                        className="p-3"
                       >
-                        <Search className="h-4 w-4" />
+                        <Search className="h-5 w-5" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>View Printings</TooltipContent>
@@ -164,10 +186,11 @@ export function CardRow({ card, onRemove, onSetClick, onCardClick, format }: Car
                     <TooltipTrigger asChild>
                       <Button
                         variant="ghost"
-                        size="sm"
+                        size="lg"
                         onClick={() => setShowPriceHistory(true)}
+                        className="p-3"
                       >
-                        <LineChart className="h-4 w-4" />
+                        <LineChart className="h-5 w-5" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>Price History</TooltipContent>
@@ -177,17 +200,18 @@ export function CardRow({ card, onRemove, onSetClick, onCardClick, format }: Car
                     <TooltipTrigger asChild>
                       <Button
                         variant="ghost"
-                        size="sm"
+                        size="lg"
                         onClick={() => setShowPriceAlert(true)}
+                        className="p-3"
                       >
-                        <Bell className="h-4 w-4" />
+                        <Bell className="h-5 w-5" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>Set Price Alert</TooltipContent>
                   </Tooltip>
                 </div>
 
-                <Button variant="destructive" size="sm" onClick={onRemove}>
+                <Button variant="destructive" size="lg" onClick={onRemove} className="px-6">
                   Remove
                 </Button>
               </div>

@@ -3,6 +3,7 @@ import { CardRow } from "./card-row";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface DeckListProps {
   cards: DeckCard[];
@@ -16,37 +17,82 @@ export function DeckList({ cards, pickedUpCards, onCardMove, format }: DeckListP
   const [selectedSet, setSelectedSet] = useState<string | null>(null);
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-2xl font-semibold mb-4">Deck List</h2>
-        <ScrollArea className="h-[400px]">
-          {cards.map((card) => (
-            <CardRow
-              key={card.id}
-              card={card}
-              onRemove={() => onCardMove(card, true)}
-              onSetClick={setSelectedSet}
-              onCardClick={() => setSelectedCard(card)}
-              format={format}
-            />
-          ))}
-        </ScrollArea>
+    <div className="space-y-6">
+      {/* Desktop View */}
+      <div className="hidden md:block space-y-8">
+        <div>
+          <h2 className="text-2xl font-semibold mb-4">Deck List</h2>
+          <ScrollArea className="h-[400px] px-1">
+            {cards.map((card) => (
+              <CardRow
+                key={card.id}
+                card={card}
+                onRemove={() => onCardMove(card, true)}
+                onSetClick={setSelectedSet}
+                onCardClick={() => setSelectedCard(card)}
+                format={format}
+              />
+            ))}
+          </ScrollArea>
+        </div>
+
+        <div>
+          <h2 className="text-2xl font-semibold mb-4">Picked Up</h2>
+          <ScrollArea className="h-[200px] px-1">
+            {pickedUpCards.map((card) => (
+              <CardRow
+                key={card.id}
+                card={card}
+                onRemove={() => onCardMove(card, false)}
+                onSetClick={setSelectedSet}
+                onCardClick={() => setSelectedCard(card)}
+                format={format}
+              />
+            ))}
+          </ScrollArea>
+        </div>
       </div>
 
-      <div>
-        <h2 className="text-2xl font-semibold mb-4">Picked Up</h2>
-        <ScrollArea className="h-[200px]">
-          {pickedUpCards.map((card) => (
-            <CardRow
-              key={card.id}
-              card={card}
-              onRemove={() => onCardMove(card, false)}
-              onSetClick={setSelectedSet}
-              onCardClick={() => setSelectedCard(card)}
-              format={format}
-            />
-          ))}
-        </ScrollArea>
+      {/* Mobile View */}
+      <div className="md:hidden">
+        <Tabs defaultValue="deck" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="deck" className="text-lg py-3">
+              Deck List ({cards.length})
+            </TabsTrigger>
+            <TabsTrigger value="picked" className="text-lg py-3">
+              Picked Up ({pickedUpCards.length})
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="deck" className="mt-4">
+            <ScrollArea className="h-[calc(100vh-12rem)] px-1">
+              {cards.map((card) => (
+                <CardRow
+                  key={card.id}
+                  card={card}
+                  onRemove={() => onCardMove(card, true)}
+                  onSetClick={setSelectedSet}
+                  onCardClick={() => setSelectedCard(card)}
+                  format={format}
+                />
+              ))}
+            </ScrollArea>
+          </TabsContent>
+          <TabsContent value="picked" className="mt-4">
+            <ScrollArea className="h-[calc(100vh-12rem)] px-1">
+              {pickedUpCards.map((card) => (
+                <CardRow
+                  key={card.id}
+                  card={card}
+                  onRemove={() => onCardMove(card, false)}
+                  onSetClick={setSelectedSet}
+                  onCardClick={() => setSelectedCard(card)}
+                  format={format}
+                />
+              ))}
+            </ScrollArea>
+          </TabsContent>
+        </Tabs>
       </div>
 
       <Dialog open={!!selectedCard} onOpenChange={() => setSelectedCard(null)}>
