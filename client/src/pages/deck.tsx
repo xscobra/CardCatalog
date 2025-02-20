@@ -26,7 +26,6 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { loadDecksFromLocal, saveDecksToLocal } from "@/lib/localStorage";
-import { CardRecommendations } from "@/components/card-recommendations";
 
 const FORMATS = [
   { value: "standard", label: "Standard" },
@@ -229,8 +228,8 @@ export default function DeckPage() {
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 min-h-screen">
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          <Button
-            variant="ghost"
+          <Button 
+            variant="ghost" 
             onClick={() => setLocation("/")}
             className="p-2"
           >
@@ -284,16 +283,10 @@ export default function DeckPage() {
       </div>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-2">
-        <div className="order-2 lg:order-1 space-y-8">
+        <div className="order-2 lg:order-1">
           <CardSearch
             onCardSelect={handleCardSelect}
           />
-          {deck && (
-            <CardRecommendations
-              deckCards={[...deck.cards, ...deck.pickedUpCards]}
-              onCardSelect={handleCardSelect}
-            />
-          )}
         </div>
 
         <div className="order-1 lg:order-2">
