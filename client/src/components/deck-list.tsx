@@ -8,9 +8,10 @@ interface DeckListProps {
   cards: DeckCard[];
   pickedUpCards: DeckCard[];
   onCardMove: (card: DeckCard, toPickedUp: boolean) => void;
+  format?: string;
 }
 
-export function DeckList({ cards, pickedUpCards, onCardMove }: DeckListProps) {
+export function DeckList({ cards, pickedUpCards, onCardMove, format }: DeckListProps) {
   const [selectedCard, setSelectedCard] = useState<DeckCard | null>(null);
   const [selectedSet, setSelectedSet] = useState<string | null>(null);
 
@@ -26,6 +27,7 @@ export function DeckList({ cards, pickedUpCards, onCardMove }: DeckListProps) {
               onRemove={() => onCardMove(card, true)}
               onSetClick={setSelectedSet}
               onCardClick={() => setSelectedCard(card)}
+              format={format}
             />
           ))}
         </ScrollArea>
@@ -41,6 +43,7 @@ export function DeckList({ cards, pickedUpCards, onCardMove }: DeckListProps) {
               onRemove={() => onCardMove(card, false)}
               onSetClick={setSelectedSet}
               onCardClick={() => setSelectedCard(card)}
+              format={format}
             />
           ))}
         </ScrollArea>
