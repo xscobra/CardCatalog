@@ -8,6 +8,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
 import { Download, Upload, ArrowLeft, Trash2 } from "lucide-react";
 import type { Deck, DeckCard } from "@shared/schema";
+import type { ScryfallCard } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -90,6 +91,23 @@ export default function DeckPage() {
     }
   };
 
+  const transformScryfallCard = (card: ScryfallCard): DeckCard => {
+    return {
+      id: card.id,
+      name: card.name,
+      sets: [{
+        code: card.set,
+        name: card.set_name,
+        symbol: card.set_uri,
+      }],
+      prices: {
+        tcgplayer: card.prices.usd ? parseFloat(card.prices.usd) : null,
+        cardkingdom: card.prices.usd_foil ? parseFloat(card.prices.usd_foil) : null,
+      },
+      imageUrl: card.image_uris?.normal || "",
+    };
+  };
+
   const handleCardMove = (card: DeckCard, toPickedUp: boolean) => {
     if (!deck) return;
 
@@ -165,8 +183,9 @@ export default function DeckPage() {
           <CardSearch
             onCardSelect={(card) => {
               if (!deck) return;
+              const transformedCard = transformScryfallCard(card);
               updateDeck.mutate({
-                cards: [...deck.cards, card]
+                cards: [...deck.cards, transformedCard]
               });
             }}
           />
