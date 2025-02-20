@@ -6,14 +6,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
-import { Download, Upload, ArrowLeft } from "lucide-react";
+import { Download, Upload, ArrowLeft, Trash2 } from "lucide-react";
 import type { Deck, DeckCard } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 
 export default function DeckPage() {
   const { id } = useParams();
   const [, setLocation] = useLocation();
   const [name, setName] = useState("");
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { toast } = useToast();
 
   const { data: deck } = useQuery<Deck>({
@@ -50,6 +61,18 @@ export default function DeckPage() {
       toast({
         title: "Deck Created",
         description: "Your new deck has been created successfully."
+      });
+    }
+  });
+
+  const deleteDeck = useMutation({
+    mutationFn: () => apiRequest("DELETE", `/api/decks/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/decks"] });
+      setLocation("/");
+      toast({
+        title: "Deck Deleted",
+        description: "The deck has been deleted successfully."
       });
     }
   });
@@ -114,6 +137,15 @@ export default function DeckPage() {
             className="text-2xl font-bold"
             disabled={createDeck.isPending}
           />
+          {id !== "new" && (
+            <Button
+              variant="destructive"
+              onClick={() => setShowDeleteDialog(true)}
+              className="p-2"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
 
         <div className="flex gap-4">
@@ -148,6 +180,29 @@ export default function DeckPage() {
           />
         </div>
       </div>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete your deck
+              and all its cards.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                deleteDeck.mutate();
+                setShowDeleteDialog(false);
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
