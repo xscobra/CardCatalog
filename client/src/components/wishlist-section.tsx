@@ -1,31 +1,22 @@
-import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { CardSearch } from "./card-search";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { DeckCard } from "@shared/schema";
 import type { ScryfallCard } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { CardRow } from "./card-row";
+import { loadWishlistFromLocal, saveWishlistToLocal } from "@/lib/localStorage";
 
 export function WishlistSection() {
-  const { data: cards = [] } = useQuery<DeckCard[]>({
-    queryKey: ["/api/wishlist"]
-  });
+  const [cards, setCards] = useState<DeckCard[]>([]);
   const { toast } = useToast();
 
-  const updateWishlist = useMutation({
-    mutationFn: (cards: DeckCard[]) =>
-      apiRequest("PUT", "/api/wishlist", cards),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/wishlist"] });
-      toast({
-        title: "Wishlist Updated",
-        description: "Your wishlist has been updated successfully."
-      });
-    }
-  });
+  useEffect(() => {
+    // Load wishlist from localStorage on component mount
+    const savedWishlist = loadWishlistFromLocal();
+    setCards(savedWishlist);
+  }, []);
 
   const transformScryfallCard = (card: ScryfallCard): DeckCard => {
     return {
@@ -54,11 +45,23 @@ export function WishlistSection() {
       });
       return;
     }
-    updateWishlist.mutate([...cards, transformedCard]);
+    const updatedCards = [...cards, transformedCard];
+    setCards(updatedCards);
+    saveWishlistToLocal(updatedCards);
+    toast({
+      title: "Card Added",
+      description: "Card has been added to your wishlist."
+    });
   };
 
   const handleRemoveCard = (cardId: string) => {
-    updateWishlist.mutate(cards.filter(c => c.id !== cardId));
+    const updatedCards = cards.filter(c => c.id !== cardId);
+    setCards(updatedCards);
+    saveWishlistToLocal(updatedCards);
+    toast({
+      title: "Card Removed",
+      description: "Card has been removed from your wishlist."
+    });
   };
 
   const handlePriceUpdate = (cardId: string, newPrices: { tcgplayer: number | null; cardkingdom: number | null }) => {
@@ -69,7 +72,8 @@ export function WishlistSection() {
     );
 
     if (JSON.stringify(updatedCards) !== JSON.stringify(cards)) {
-      updateWishlist.mutate(updatedCards);
+      setCards(updatedCards);
+      saveWishlistToLocal(updatedCards);
     }
   };
 

@@ -1,10 +1,9 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Deck } from "@shared/schema";
 import { WishlistSection } from "@/components/wishlist-section";
 import {
@@ -17,31 +16,29 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
-import { useState } from "react";
+import { loadDecksFromLocal, saveDecksToLocal } from "@/lib/localStorage";
 
 export default function Home() {
-  const { data: decks } = useQuery<Deck[]>({
-    queryKey: ["/api/decks"],
-    // Reduce polling frequency to 10 seconds
-    refetchInterval: 10000,
-    // Enable stale-while-revalidate
-    staleTime: 5000,
-    // Keep cache for 5 minutes
-    cacheTime: 1000 * 60 * 5,
-  });
-  const { toast } = useToast();
+  const [decks, setDecks] = useState<Deck[]>([]);
   const [deckToDelete, setDeckToDelete] = useState<Deck | null>(null);
+  const { toast } = useToast();
 
-  const deleteDeck = useMutation({
-    mutationFn: (deckId: number) => apiRequest("DELETE", `/api/decks/${deckId}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/decks"] });
-      toast({
-        title: "Deck Deleted",
-        description: "The deck has been deleted successfully."
-      });
-    }
-  });
+  useEffect(() => {
+    // Load decks from localStorage on component mount
+    const savedDecks = loadDecksFromLocal();
+    setDecks(savedDecks);
+  }, []);
+
+  const handleDeleteDeck = (deck: Deck) => {
+    const updatedDecks = decks.filter((d) => d.id !== deck.id);
+    setDecks(updatedDecks);
+    saveDecksToLocal(updatedDecks);
+    setDeckToDelete(null);
+    toast({
+      title: "Deck Deleted",
+      description: "The deck has been deleted successfully."
+    });
+  };
 
   return (
     <div className="container mx-auto p-8">
@@ -56,7 +53,7 @@ export default function Home() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {decks?.map((deck) => (
+        {decks.map((deck) => (
           <Card key={deck.id} className="hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle>{deck.name}</CardTitle>
@@ -102,8 +99,7 @@ export default function Home() {
             <AlertDialogAction
               onClick={() => {
                 if (deckToDelete) {
-                  deleteDeck.mutate(deckToDelete.id);
-                  setDeckToDelete(null);
+                  handleDeleteDeck(deckToDelete);
                 }
               }}
             >
