@@ -13,7 +13,8 @@ const scryfallCardSchema = z.object({
   }),
   set: z.string(),
   set_name: z.string(),
-  set_uri: z.string()
+  collector_number: z.string(),
+  set_type: z.string()
 });
 
 export type ScryfallCard = z.infer<typeof scryfallCardSchema>;
@@ -28,6 +29,10 @@ export const searchCards = async (query: string) => {
 };
 
 export const getCardPrints = async (cardName: string) => {
-  const response = await api.get(`/cards/search?q=!"${encodeURIComponent(cardName)}" print:all`);
+  const response = await api.get(`/cards/search?q=!"${encodeURIComponent(cardName)}" unique:prints`);
   return z.array(scryfallCardSchema).parse(response.data.data);
+};
+
+export const getSetSymbolUrl = (setCode: string) => {
+  return `https://svgs.scryfall.io/sets/${setCode}.svg`;
 };
