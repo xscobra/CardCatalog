@@ -4,8 +4,15 @@ import { CardSearch } from "@/components/card-search";
 import { DeckList } from "@/components/deck-list";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Download, Upload, ArrowLeft, Trash2 } from "lucide-react";
 import type { Deck, DeckCard } from "@shared/schema";
 import type { ScryfallCard } from "@/lib/api";
@@ -20,6 +27,16 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
+
+const FORMATS = [
+  { value: "standard", label: "Standard" },
+  { value: "modern", label: "Modern" },
+  { value: "commander", label: "Commander" },
+  { value: "pioneer", label: "Pioneer" },
+  { value: "legacy", label: "Legacy" },
+  { value: "vintage", label: "Vintage" },
+  { value: "pauper", label: "Pauper" },
+];
 
 export default function DeckPage() {
   const { id } = useParams();
@@ -45,7 +62,7 @@ export default function DeckPage() {
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       setDebouncedName(name);
-    }, 500); // Wait for 500ms of no typing before updating
+    }, 500);
 
     return () => clearTimeout(timeoutId);
   }, [name]);
@@ -101,6 +118,10 @@ export default function DeckPage() {
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setName(e.target.value);
+  };
+
+  const handleFormatChange = (format: string) => {
+    updateDeck.mutate({ format });
   };
 
   const transformScryfallCard = (card: ScryfallCard): DeckCard => {
@@ -179,15 +200,35 @@ export default function DeckPage() {
           )}
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={exportDeck} disabled={!deck} className="w-full sm:w-auto">
-            <Download className="mr-2 h-4 w-4" />
-            Export
-          </Button>
-          <Button disabled={!deck} className="w-full sm:w-auto">
-            <Upload className="mr-2 h-4 w-4" />
-            Import
-          </Button>
+        <div className="flex flex-wrap gap-4 items-center">
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={exportDeck} disabled={!deck} className="w-full sm:w-auto">
+              <Download className="mr-2 h-4 w-4" />
+              Export
+            </Button>
+            <Button disabled={!deck} className="w-full sm:w-auto">
+              <Upload className="mr-2 h-4 w-4" />
+              Import
+            </Button>
+          </div>
+
+          {deck && (
+            <Select
+              value={deck.format || ""}
+              onValueChange={handleFormatChange}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select Format" />
+              </SelectTrigger>
+              <SelectContent>
+                {FORMATS.map(({ value, label }) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
       </div>
 
@@ -209,6 +250,7 @@ export default function DeckPage() {
             cards={deck?.cards || []}
             pickedUpCards={deck?.pickedUpCards || []}
             onCardMove={handleCardMove}
+            format={deck?.format}
           />
         </div>
       </div>
