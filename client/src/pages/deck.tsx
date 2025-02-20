@@ -263,10 +263,6 @@ export default function DeckPage() {
               <Download className="mr-2 h-4 w-4" />
               Export
             </Button>
-            <Button disabled={!deck} className="w-full sm:w-auto">
-              <Upload className="mr-2 h-4 w-4" />
-              Import
-            </Button>
           </div>
 
           {deck && (
