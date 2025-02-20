@@ -1,7 +1,7 @@
 import { decks, wishlistCards, priceHistory, priceAlerts, cardMetadata, cardCombinations, budgetAlternatives,
   type Deck, type InsertDeck, type DeckCard, type PriceAlert, type PriceHistory, type CardRecommendation, type BudgetAlternative } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, sql, gt, asc } from "drizzle-orm";
+import { eq, and, desc, sql, gt, lt, asc } from "drizzle-orm";
 
 export interface IStorage {
   getDeck(id: number): Promise<Deck | undefined>;
@@ -297,51 +297,71 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getCardRecommendations(cardIds: string[]): Promise<CardRecommendation[]> {
-    const recommendations = await db
-      .select({
-        card: cardMetadata,
-        synergy: cardCombinations.synergy,
-        frequency: cardCombinations.frequency
-      })
-      .from(cardCombinations)
-      .innerJoin(cardMetadata, eq(cardMetadata.id, cardCombinations.combinedWithId))
-      .where(sql`${cardCombinations.cardId} = ANY(${cardIds})`)
-      .orderBy(desc(cardCombinations.frequency))
-      .limit(10);
+    try {
+      const recommendations = await db
+        .select({
+          card: cardMetadata,
+          synergy: cardCombinations.synergy,
+          frequency: cardCombinations.frequency
+        })
+        .from(cardCombinations)
+        .innerJoin(
+          cardMetadata,
+          eq(cardMetadata.id, cardCombinations.combinedWithId)
+        )
+        .where(sql`${cardCombinations.cardId} = ANY(${cardIds}::text[])`)
+        .orderBy(desc(cardCombinations.frequency))
+        .limit(10);
 
-    return recommendations.map(r => ({
-      card: r.card,
-      synergy: parseFloat(r.synergy.toString()),
-      frequency: r.frequency
-    }));
+      return recommendations.map(r => ({
+        card: r.card,
+        synergy: parseFloat(r.synergy.toString()),
+        frequency: r.frequency
+      }));
+    } catch (error) {
+      console.error('Error getting card recommendations:', error);
+      return [];
+    }
   }
 
   async getBudgetAlternatives(cardId: string, maxPriceRatio = 0.5): Promise<BudgetAlternative[]> {
-    const alternatives = await db
-      .select({
-        originalCard: cardMetadata,
-        budgetCard: db.select().from(cardMetadata).where(eq(cardMetadata.id, budgetAlternatives.budgetCardId)).as('budgetCard'),
-        priceRatio: budgetAlternatives.priceRatio,
-        similarityScore: budgetAlternatives.similarityScore
-      })
-      .from(budgetAlternatives)
-      .innerJoin(cardMetadata, eq(cardMetadata.id, budgetAlternatives.expensiveCardId))
-      .where(
-        and(
-          eq(budgetAlternatives.expensiveCardId, cardId),
-          gt(budgetAlternatives.similarityScore, 0.7),
-          sql`${budgetAlternatives.price_ratio} <= ${maxPriceRatio}`
+    try {
+      const alternatives = await db
+        .select({
+          originalCard: cardMetadata,
+          budgetCard: cardMetadata,
+          priceRatio: budgetAlternatives.priceRatio,
+          similarityScore: budgetAlternatives.similarityScore
+        })
+        .from(budgetAlternatives)
+        .innerJoin(
+          cardMetadata,
+          eq(cardMetadata.id, budgetAlternatives.expensiveCardId)
         )
-      )
-      .orderBy(desc(budgetAlternatives.similarityScore))
-      .limit(5);
+        .innerJoin(
+          cardMetadata,
+          eq(cardMetadata.id, budgetAlternatives.budgetCardId)
+        )
+        .where(
+          and(
+            eq(budgetAlternatives.expensiveCardId, cardId),
+            gt(budgetAlternatives.similarityScore, 0.7),
+            lt(budgetAlternatives.priceRatio, maxPriceRatio)
+          )
+        )
+        .orderBy(desc(budgetAlternatives.similarityScore))
+        .limit(5);
 
-    return alternatives.map(a => ({
-      originalCard: a.originalCard,
-      budgetCard: a.budgetCard,
-      priceRatio: parseFloat(a.priceRatio.toString()),
-      similarityScore: parseFloat(a.similarityScore.toString())
-    }));
+      return alternatives.map(a => ({
+        originalCard: a.originalCard,
+        budgetCard: a.budgetCard,
+        priceRatio: parseFloat(a.priceRatio.toString()),
+        similarityScore: parseFloat(a.similarityScore.toString())
+      }));
+    } catch (error) {
+      console.error('Error getting budget alternatives:', error);
+      return [];
+    }
   }
 
   async updateCardCombination(cardId: string, combinedWithId: string): Promise<void> {
