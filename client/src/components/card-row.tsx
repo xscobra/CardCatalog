@@ -32,15 +32,24 @@ interface CardRowProps {
   onSetClick: (setName: string) => void;
   onCardClick: () => void;
   format?: string;
+  onPriceUpdate?: (cardId: string, newPrices: { tcgplayer: number | null; cardkingdom: number | null }) => void;
 }
 
-export function CardRow({ card, onRemove, onSetClick, onCardClick, format }: CardRowProps) {
+export function CardRow({ 
+  card, 
+  onRemove, 
+  onSetClick, 
+  onCardClick, 
+  format,
+  onPriceUpdate 
+}: CardRowProps) {
   const [showPrintings, setShowPrintings] = useState(false);
   const [showImage, setShowImage] = useState(false);
   const [showSets, setShowSets] = useState(false);
   const [showPriceHistory, setShowPriceHistory] = useState(false);
   const [showPriceAlert, setShowPriceAlert] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [selectedPrices, setSelectedPrices] = useState(card.prices);
 
   const { data: metadata } = useQuery({
     queryKey: ["/api/cards/metadata", card.id],
@@ -51,9 +60,15 @@ export function CardRow({ card, onRemove, onSetClick, onCardClick, format }: Car
 
   const isLegal = format && metadata?.format_legality?.[format] === 'legal';
 
+  const handlePrintingSelect = (newPrices: { tcgplayer: number | null; cardkingdom: number | null }) => {
+    setSelectedPrices(newPrices);
+    if (onPriceUpdate) {
+      onPriceUpdate(card.id, newPrices);
+    }
+  };
+
   const handleDragEnd = (_: any, info: PanInfo) => {
     if (Math.abs(info.offset.x) > 100) {
-      // If dragged left, remove the card
       if (info.offset.x < 0) {
         onRemove();
       }
@@ -111,9 +126,9 @@ export function CardRow({ card, onRemove, onSetClick, onCardClick, format }: Car
                   )}
                 </div>
                 <div className="space-y-1 mt-2 text-base text-muted-foreground">
-                  <div>TCGplayer: ${card.prices.tcgplayer?.toFixed(2) || "N/A"}</div>
-                  {card.prices.cardkingdom && (
-                    <div>Card Kingdom: ${card.prices.cardkingdom.toFixed(2)}</div>
+                  <div>TCGplayer: ${selectedPrices.tcgplayer?.toFixed(2) || "N/A"}</div>
+                  {selectedPrices.cardkingdom && (
+                    <div>Card Kingdom: ${selectedPrices.cardkingdom.toFixed(2)}</div>
                   )}
                 </div>
               </div>
@@ -222,6 +237,7 @@ export function CardRow({ card, onRemove, onSetClick, onCardClick, format }: Car
         cardName={card.name}
         open={showPrintings}
         onOpenChange={setShowPrintings}
+        onPriceUpdate={handlePrintingSelect}
       />
 
       <SetSymbolsDialog
@@ -240,7 +256,7 @@ export function CardRow({ card, onRemove, onSetClick, onCardClick, format }: Car
       <PriceAlertDialog
         cardId={card.id}
         cardName={card.name}
-        currentPrice={card.prices.tcgplayer}
+        currentPrice={selectedPrices.tcgplayer}
         open={showPriceAlert}
         onOpenChange={setShowPriceAlert}
       />

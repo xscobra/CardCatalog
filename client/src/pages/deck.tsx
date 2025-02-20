@@ -206,6 +206,27 @@ export default function DeckPage() {
 
   const { tcgplayer: totalTcg, cardkingdom: totalCk } = calculateTotalPrices();
 
+  const handlePriceUpdate = (cardId: string, newPrices: { tcgplayer: number | null; cardkingdom: number | null }) => {
+    if (!deck) return;
+
+    const updateCardInList = (list: DeckCard[]) =>
+      list.map((card) =>
+        card.id === cardId
+          ? { ...card, prices: newPrices }
+          : card
+      );
+
+    const newCards = updateCardInList(deck.cards);
+    const newPickedUpCards = updateCardInList(deck.pickedUpCards);
+
+    if (JSON.stringify([...newCards, ...newPickedUpCards]) !== JSON.stringify([...deck.cards, ...deck.pickedUpCards])) {
+      updateDeck.mutate({ 
+        cards: newCards,
+        pickedUpCards: newPickedUpCards
+      });
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 min-h-screen">
       <div className="space-y-4">
@@ -282,6 +303,7 @@ export default function DeckPage() {
             onCardMove={handleCardMove}
             format={deck?.format}
             totalPrices={{ tcgplayer: totalTcg, cardkingdom: totalCk }}
+            onPriceUpdate={handlePriceUpdate}
           />
         </div>
       </div>
