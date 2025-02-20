@@ -104,7 +104,7 @@ export default function DeckPage() {
         tcgplayer: card.prices.usd ? parseFloat(card.prices.usd) : null,
         cardkingdom: card.prices.usd_foil ? parseFloat(card.prices.usd_foil) : null,
       },
-      imageUrl: card.image_uris?.normal || "",
+      imageUrl: getCardImageUrl(card),
     };
   };
 

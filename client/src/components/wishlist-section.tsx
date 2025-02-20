@@ -16,7 +16,7 @@ export function WishlistSection() {
   const { toast } = useToast();
 
   const updateWishlist = useMutation({
-    mutationFn: (cards: DeckCard[]) => 
+    mutationFn: (cards: DeckCard[]) =>
       apiRequest("PUT", "/api/wishlist", cards),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/wishlist"] });
@@ -40,7 +40,7 @@ export function WishlistSection() {
         tcgplayer: card.prices.usd ? parseFloat(card.prices.usd) : null,
         cardkingdom: card.prices.usd_foil ? parseFloat(card.prices.usd_foil) : null,
       },
-      imageUrl: card.image_uris?.normal || "",
+      imageUrl: getCardImageUrl(card),
     };
   };
 
