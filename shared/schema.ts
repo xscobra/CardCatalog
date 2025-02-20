@@ -1,4 +1,4 @@
-import { pgTable, text, serial, jsonb, timestamp, boolean, integer, decimal } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, jsonb, timestamp, boolean, integer, decimal, primaryKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -49,6 +49,26 @@ export const wishlistCards = pgTable("wishlist_cards", {
   cards: jsonb("cards").$type<DeckCard[]>().notNull().default([])
 });
 
+export const cardCombinations = pgTable("card_combinations", {
+  id: serial("id").primaryKey(),
+  cardId: text("card_id").notNull().references(() => cardMetadata.id),
+  combinedWithId: text("combined_with_id").notNull().references(() => cardMetadata.id),
+  frequency: integer("frequency").notNull().default(1),
+  synergy: decimal("synergy", { precision: 4, scale: 2 }).notNull().default(0),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+}, (table) => ({
+  uniquePair: primaryKey(table.cardId, table.combinedWithId)
+}));
+
+export const budgetAlternatives = pgTable("budget_alternatives", {
+  id: serial("id").primaryKey(),
+  expensiveCardId: text("expensive_card_id").notNull().references(() => cardMetadata.id),
+  budgetCardId: text("budget_card_id").notNull().references(() => cardMetadata.id),
+  priceRatio: decimal("price_ratio", { precision: 6, scale: 2 }).notNull(),
+  similarityScore: decimal("similarity_score", { precision: 4, scale: 2 }).notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
 export const insertDeckSchema = createInsertSchema(decks).pick({
   name: true,
   description: true,
@@ -97,4 +117,17 @@ export interface PriceHistory {
   source: string;
   price: number;
   timestamp: Date;
+}
+
+export interface CardRecommendation {
+  card: typeof cardMetadata.$inferSelect;
+  synergy: number;
+  frequency: number;
+}
+
+export interface BudgetAlternative {
+  originalCard: typeof cardMetadata.$inferSelect;
+  budgetCard: typeof cardMetadata.$inferSelect;
+  priceRatio: number;
+  similarityScore: number;
 }

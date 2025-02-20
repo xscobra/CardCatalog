@@ -1,7 +1,7 @@
-import { decks, wishlistCards, priceHistory, priceAlerts, cardMetadata, 
-  type Deck, type InsertDeck, type DeckCard, type PriceAlert, type PriceHistory } from "@shared/schema";
+import { decks, wishlistCards, priceHistory, priceAlerts, cardMetadata, cardCombinations, budgetAlternatives,
+  type Deck, type InsertDeck, type DeckCard, type PriceAlert, type PriceHistory, type CardRecommendation, type BudgetAlternative } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, gt, asc } from "drizzle-orm";
 
 export interface IStorage {
   getDeck(id: number): Promise<Deck | undefined>;
@@ -21,6 +21,11 @@ export interface IStorage {
   upsertCardMetadata(metadata: typeof cardMetadata.$inferInsert): Promise<typeof cardMetadata.$inferSelect>;
   getCardMetadata(cardId: string): Promise<typeof cardMetadata.$inferSelect | undefined>;
   getCardsByFormat(format: string): Promise<typeof cardMetadata.$inferSelect[]>;
+
+  // New methods for recommendations
+  getCardRecommendations(cardIds: string[]): Promise<CardRecommendation[]>;
+  getBudgetAlternatives(cardId: string, maxPriceRatio?: number): Promise<BudgetAlternative[]>;
+  updateCardCombination(cardId: string, combinedWithId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -152,9 +157,9 @@ export class DatabaseStorage implements IStorage {
   async addPriceHistory(cardId: string, source: string, price: number): Promise<PriceHistory> {
     const [history] = await db
       .insert(priceHistory)
-      .values({ 
-        cardId, 
-        source, 
+      .values({
+        cardId,
+        source,
         price: price.toString()
       })
       .returning();
@@ -242,11 +247,11 @@ export class DatabaseStorage implements IStorage {
 
   async updatePriceAlert(id: number, updates: Partial<PriceAlert>): Promise<PriceAlert | undefined> {
     const updatesWithStringPrice = updates.targetPrice !== undefined
-      ? { 
-          ...updates, 
-          targetPrice: updates.targetPrice.toString(),
-          isActive: updates.isActive ?? true
-        }
+      ? {
+        ...updates,
+        targetPrice: updates.targetPrice.toString(),
+        isActive: updates.isActive ?? true
+      }
       : updates;
 
     const [alert] = await db
@@ -289,6 +294,72 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(cardMetadata)
       .where(sql`${cardMetadata.format_legality}->>${format} = 'legal'`);
+  }
+
+  async getCardRecommendations(cardIds: string[]): Promise<CardRecommendation[]> {
+    const recommendations = await db
+      .select({
+        card: cardMetadata,
+        synergy: cardCombinations.synergy,
+        frequency: cardCombinations.frequency
+      })
+      .from(cardCombinations)
+      .innerJoin(cardMetadata, eq(cardMetadata.id, cardCombinations.combinedWithId))
+      .where(sql`${cardCombinations.cardId} = ANY(${cardIds})`)
+      .orderBy(desc(cardCombinations.frequency))
+      .limit(10);
+
+    return recommendations.map(r => ({
+      card: r.card,
+      synergy: parseFloat(r.synergy.toString()),
+      frequency: r.frequency
+    }));
+  }
+
+  async getBudgetAlternatives(cardId: string, maxPriceRatio = 0.5): Promise<BudgetAlternative[]> {
+    const alternatives = await db
+      .select({
+        originalCard: cardMetadata,
+        budgetCard: db.select().from(cardMetadata).where(eq(cardMetadata.id, budgetAlternatives.budgetCardId)).as('budgetCard'),
+        priceRatio: budgetAlternatives.priceRatio,
+        similarityScore: budgetAlternatives.similarityScore
+      })
+      .from(budgetAlternatives)
+      .innerJoin(cardMetadata, eq(cardMetadata.id, budgetAlternatives.expensiveCardId))
+      .where(
+        and(
+          eq(budgetAlternatives.expensiveCardId, cardId),
+          gt(budgetAlternatives.similarityScore, 0.7),
+          sql`${budgetAlternatives.price_ratio} <= ${maxPriceRatio}`
+        )
+      )
+      .orderBy(desc(budgetAlternatives.similarityScore))
+      .limit(5);
+
+    return alternatives.map(a => ({
+      originalCard: a.originalCard,
+      budgetCard: a.budgetCard,
+      priceRatio: parseFloat(a.priceRatio.toString()),
+      similarityScore: parseFloat(a.similarityScore.toString())
+    }));
+  }
+
+  async updateCardCombination(cardId: string, combinedWithId: string): Promise<void> {
+    await db
+      .insert(cardCombinations)
+      .values({
+        cardId,
+        combinedWithId,
+        frequency: 1,
+        synergy: 0.5
+      })
+      .onConflictDoUpdate({
+        target: [cardCombinations.cardId, cardCombinations.combinedWithId],
+        set: {
+          frequency: sql`${cardCombinations.frequency} + 1`,
+          updatedAt: new Date()
+        }
+      });
   }
 }
 
