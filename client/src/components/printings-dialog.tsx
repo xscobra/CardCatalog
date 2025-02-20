@@ -1,6 +1,7 @@
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { getCardPrints, getSetSymbolUrl } from "@/lib/api";
 import { Loader2 } from "lucide-react";
@@ -9,14 +10,30 @@ interface PrintingsDialogProps {
   cardName: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onPriceUpdate?: (newPrices: { tcgplayer: number | null; cardkingdom: number | null }) => void;
 }
 
-export function PrintingsDialog({ cardName, open, onOpenChange }: PrintingsDialogProps) {
+export function PrintingsDialog({ 
+  cardName, 
+  open, 
+  onOpenChange,
+  onPriceUpdate 
+}: PrintingsDialogProps) {
   const { data: prints, isLoading } = useQuery({
     queryKey: ["prints", cardName],
     queryFn: () => getCardPrints(cardName),
     enabled: open
   });
+
+  const handlePrintingSelect = (print: any) => {
+    if (onPriceUpdate) {
+      onPriceUpdate({
+        tcgplayer: print.prices.usd ? parseFloat(print.prices.usd) : null,
+        cardkingdom: print.prices.usd_foil ? parseFloat(print.prices.usd_foil) : null
+      });
+    }
+    onOpenChange(false);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -63,6 +80,12 @@ export function PrintingsDialog({ cardName, open, onOpenChange }: PrintingsDialo
                           </>
                         )}
                       </div>
+                      <Button 
+                        className="w-full mt-2"
+                        onClick={() => handlePrintingSelect(print)}
+                      >
+                        Select This Printing
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
