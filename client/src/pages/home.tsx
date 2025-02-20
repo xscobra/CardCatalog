@@ -22,7 +22,12 @@ import { useState } from "react";
 export default function Home() {
   const { data: decks } = useQuery<Deck[]>({
     queryKey: ["/api/decks"],
-    refetchInterval: 2000 // Poll for updates every 2 seconds
+    // Reduce polling frequency to 10 seconds
+    refetchInterval: 10000,
+    // Enable stale-while-revalidate
+    staleTime: 5000,
+    // Keep cache for 5 minutes
+    cacheTime: 1000 * 60 * 5,
   });
   const { toast } = useToast();
   const [deckToDelete, setDeckToDelete] = useState<Deck | null>(null);

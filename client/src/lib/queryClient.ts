@@ -41,17 +41,24 @@ export const getQueryFn: <T>(options: {
     return await res.json();
   };
 
+// Optimized query client configuration
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
-      refetchInterval: false,
+      // Enable stale-while-revalidate
+      staleTime: 1000 * 60, // Data remains fresh for 1 minute
+      cacheTime: 1000 * 60 * 5, // Cache persists for 5 minutes
+      // Reduce unnecessary background refetches
       refetchOnWindowFocus: false,
-      staleTime: Infinity,
-      retry: false,
+      refetchOnReconnect: true,
+      // Add retry with exponential backoff
+      retry: 3,
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     },
     mutations: {
-      retry: false,
+      retry: 2,
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     },
   },
 });
