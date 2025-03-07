@@ -8,15 +8,28 @@ export const decks = pgTable("decks", {
   description: text("description"),
   cards: jsonb("cards").$type<DeckCard[]>().notNull().default([]),
   pickedUpCards: jsonb("picked_up_cards").$type<DeckCard[]>().notNull().default([]),
-  format: text("format"), // For tournament support
-  isValid: boolean("is_valid").default(true), // For tournament legality
-  notes: text("notes") // For deck notes
+  format: text("format"),
+  isValid: boolean("is_valid").default(true),
+  notes: text("notes")
+});
+
+export const sharedDecks = pgTable("shared_decks", {
+  id: serial("id").primaryKey(),
+  shareCode: text("share_code").notNull().unique(),
+  deckId: integer("deck_id").notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  cards: jsonb("cards").$type<DeckCard[]>().notNull(),
+  format: text("format"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  views: integer("views").default(0),
+  isActive: boolean("is_active").default(true)
 });
 
 export const priceHistory = pgTable("price_history", {
   id: serial("id").primaryKey(),
   cardId: text("card_id").notNull(),
-  source: text("source").notNull(), // tcgplayer, cardkingdom, etc.
+  source: text("source").notNull(),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   timestamp: timestamp("timestamp").defaultNow().notNull()
 });
@@ -25,13 +38,13 @@ export const priceAlerts = pgTable("price_alerts", {
   id: serial("id").primaryKey(),
   cardId: text("card_id").notNull(),
   targetPrice: decimal("target_price", { precision: 10, scale: 2 }).notNull(),
-  isAbove: boolean("is_above").notNull(), // true for price increase alerts, false for decrease
+  isAbove: boolean("is_above").notNull(),
   isActive: boolean("is_active").default(true),
   lastNotified: timestamp("last_notified")
 });
 
 export const cardMetadata = pgTable("card_metadata", {
-  id: text("id").primaryKey(), // Scryfall ID
+  id: text("id").primaryKey(),
   name: text("name").notNull(),
   manaCost: text("mana_cost"),
   cmc: decimal("cmc", { precision: 4, scale: 1 }),
@@ -55,8 +68,18 @@ export const insertDeckSchema = createInsertSchema(decks).pick({
   format: true
 });
 
+export const insertSharedDeckSchema = createInsertSchema(sharedDecks).pick({
+  shareCode: true,
+  deckId: true,
+  name: true,
+  description: true,
+  format: true
+});
+
 export type InsertDeck = z.infer<typeof insertDeckSchema>;
 export type Deck = typeof decks.$inferSelect;
+export type SharedDeck = typeof sharedDecks.$inferSelect;
+export type InsertSharedDeck = z.infer<typeof insertSharedDeckSchema>;
 
 export interface DeckCard {
   id: string;
@@ -73,7 +96,6 @@ export interface DeckCard {
   imageUrl: string;
 }
 
-// New types for metadata and analysis
 export interface DeckAnalysis {
   manaCurve: Record<number, number>;
   colorDistribution: Record<string, number>;
