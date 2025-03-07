@@ -1,5 +1,5 @@
-import { decks, wishlistCards, priceHistory, priceAlerts, cardMetadata, 
-  type Deck, type InsertDeck, type DeckCard, type PriceAlert, type PriceHistory } from "@shared/schema";
+import { decks, wishlistCards, priceHistory, priceAlerts, cardMetadata, sharedDecks,
+  type Deck, type InsertDeck, type DeckCard, type PriceAlert, type PriceHistory, type SharedDeck, type InsertSharedDeck } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql } from "drizzle-orm";
 
@@ -11,6 +11,11 @@ export interface IStorage {
   deleteDeck(id: number): Promise<boolean>;
   getWishlistCards(): Promise<DeckCard[]>;
   updateWishlistCards(cards: DeckCard[]): Promise<DeckCard[]>;
+
+  // Shared deck operations
+  createSharedDeck(sharedDeck: InsertSharedDeck & { cards: DeckCard[] }): Promise<SharedDeck>;
+  getSharedDeck(shareCode: string): Promise<SharedDeck | undefined>;
+  incrementSharedDeckViews(id: number): Promise<void>;
 
   addPriceHistory(cardId: string, source: string, price: number): Promise<PriceHistory>;
   getPriceHistory(cardId: string, days?: number): Promise<PriceHistory[]>;
@@ -152,9 +157,9 @@ export class DatabaseStorage implements IStorage {
   async addPriceHistory(cardId: string, source: string, price: number): Promise<PriceHistory> {
     const [history] = await db
       .insert(priceHistory)
-      .values({ 
-        cardId, 
-        source, 
+      .values({
+        cardId,
+        source,
         price: price.toString()
       })
       .returning();
@@ -242,8 +247,8 @@ export class DatabaseStorage implements IStorage {
 
   async updatePriceAlert(id: number, updates: Partial<PriceAlert>): Promise<PriceAlert | undefined> {
     const updatesWithStringPrice = updates.targetPrice !== undefined
-      ? { 
-          ...updates, 
+      ? {
+          ...updates,
           targetPrice: updates.targetPrice.toString(),
           isActive: updates.isActive ?? true
         }
@@ -289,6 +294,49 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(cardMetadata)
       .where(sql`${cardMetadata.format_legality}->>${format} = 'legal'`);
+  }
+
+  async createSharedDeck(sharedDeck: InsertSharedDeck & { cards: DeckCard[] }): Promise<SharedDeck> {
+    try {
+      const [created] = await db
+        .insert(sharedDecks)
+        .values({
+          ...sharedDeck,
+          views: 0,
+          isActive: true,
+          createdAt: new Date()
+        })
+        .returning();
+      return created;
+    } catch (error) {
+      console.error('Error creating shared deck:', error);
+      throw error;
+    }
+  }
+
+  async getSharedDeck(shareCode: string): Promise<SharedDeck | undefined> {
+    try {
+      const [deck] = await db
+        .select()
+        .from(sharedDecks)
+        .where(eq(sharedDecks.shareCode, shareCode));
+      return deck;
+    } catch (error) {
+      console.error('Error getting shared deck:', error);
+      throw error;
+    }
+  }
+
+  async incrementSharedDeckViews(id: number): Promise<void> {
+    try {
+      await db
+        .update(sharedDecks)
+        .set({ views: sql`${sharedDecks.views} + 1` })
+        .where(eq(sharedDecks.id, id));
+    } catch (error) {
+      console.error('Error incrementing shared deck views:', error);
+      throw error;
+    }
   }
 }
 
