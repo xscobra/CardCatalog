@@ -1,9 +1,9 @@
-import { pgTable, text, serial, jsonb, timestamp, boolean, integer, decimal } from "drizzle-orm/pg-core";
+import { pgTable, text, bigint, jsonb, timestamp, boolean, decimal } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const decks = pgTable("decks", {
-  id: serial("id").primaryKey(),
+  id: bigint("id", { mode: "number" }).primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
   cards: jsonb("cards").$type<DeckCard[]>().notNull().default([]),
@@ -14,20 +14,20 @@ export const decks = pgTable("decks", {
 });
 
 export const sharedDecks = pgTable("shared_decks", {
-  id: serial("id").primaryKey(),
+  id: bigint("id", { mode: "number" }).primaryKey(),
   shareCode: text("share_code").notNull().unique(),
-  deckId: integer("deck_id").notNull(),
+  deckId: bigint("deck_id", { mode: "number" }).notNull(),
   name: text("name").notNull(),
   description: text("description"),
   cards: jsonb("cards").$type<DeckCard[]>().notNull(),
   format: text("format"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  views: integer("views").default(0),
+  views: bigint("views", { mode: "number" }).default(0),
   isActive: boolean("is_active").default(true)
 });
 
 export const priceHistory = pgTable("price_history", {
-  id: serial("id").primaryKey(),
+  id: bigint("id", { mode: "number" }).primaryKey(),
   cardId: text("card_id").notNull(),
   source: text("source").notNull(),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
@@ -35,7 +35,7 @@ export const priceHistory = pgTable("price_history", {
 });
 
 export const priceAlerts = pgTable("price_alerts", {
-  id: serial("id").primaryKey(),
+  id: bigint("id", { mode: "number" }).primaryKey(),
   cardId: text("card_id").notNull(),
   targetPrice: decimal("target_price", { precision: 10, scale: 2 }).notNull(),
   isAbove: boolean("is_above").notNull(),
@@ -58,7 +58,7 @@ export const cardMetadata = pgTable("card_metadata", {
 });
 
 export const wishlistCards = pgTable("wishlist_cards", {
-  id: serial("id").primaryKey(),
+  id: bigint("id", { mode: "number" }).primaryKey(),
   cards: jsonb("cards").$type<DeckCard[]>().notNull().default([])
 });
 
