@@ -1,50 +1,37 @@
-import { pgTable, text, bigint, jsonb, timestamp, boolean, decimal } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, jsonb, timestamp, boolean, integer, decimal } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const decks = pgTable("decks", {
-  id: bigint("id", { mode: "number" }).primaryKey(),
+  id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
   cards: jsonb("cards").$type<DeckCard[]>().notNull().default([]),
   pickedUpCards: jsonb("picked_up_cards").$type<DeckCard[]>().notNull().default([]),
-  format: text("format"),
-  isValid: boolean("is_valid").default(true),
-  notes: text("notes")
-});
-
-export const sharedDecks = pgTable("shared_decks", {
-  id: bigint("id", { mode: "number" }).primaryKey(),
-  shareCode: text("share_code").notNull().unique(),
-  deckId: bigint("deck_id", { mode: "number" }).notNull(),
-  name: text("name").notNull(),
-  description: text("description"),
-  cards: jsonb("cards").$type<DeckCard[]>().notNull(),
-  format: text("format"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  views: bigint("views", { mode: "number" }).default(0),
-  isActive: boolean("is_active").default(true)
+  format: text("format"), // For tournament support
+  isValid: boolean("is_valid").default(true), // For tournament legality
+  notes: text("notes") // For deck notes
 });
 
 export const priceHistory = pgTable("price_history", {
-  id: bigint("id", { mode: "number" }).primaryKey(),
+  id: serial("id").primaryKey(),
   cardId: text("card_id").notNull(),
-  source: text("source").notNull(),
+  source: text("source").notNull(), // tcgplayer, cardkingdom, etc.
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   timestamp: timestamp("timestamp").defaultNow().notNull()
 });
 
 export const priceAlerts = pgTable("price_alerts", {
-  id: bigint("id", { mode: "number" }).primaryKey(),
+  id: serial("id").primaryKey(),
   cardId: text("card_id").notNull(),
   targetPrice: decimal("target_price", { precision: 10, scale: 2 }).notNull(),
-  isAbove: boolean("is_above").notNull(),
+  isAbove: boolean("is_above").notNull(), // true for price increase alerts, false for decrease
   isActive: boolean("is_active").default(true),
   lastNotified: timestamp("last_notified")
 });
 
 export const cardMetadata = pgTable("card_metadata", {
-  id: text("id").primaryKey(),
+  id: text("id").primaryKey(), // Scryfall ID
   name: text("name").notNull(),
   manaCost: text("mana_cost"),
   cmc: decimal("cmc", { precision: 4, scale: 1 }),
@@ -58,7 +45,7 @@ export const cardMetadata = pgTable("card_metadata", {
 });
 
 export const wishlistCards = pgTable("wishlist_cards", {
-  id: bigint("id", { mode: "number" }).primaryKey(),
+  id: serial("id").primaryKey(),
   cards: jsonb("cards").$type<DeckCard[]>().notNull().default([])
 });
 
@@ -68,18 +55,8 @@ export const insertDeckSchema = createInsertSchema(decks).pick({
   format: true
 });
 
-export const insertSharedDeckSchema = createInsertSchema(sharedDecks).pick({
-  shareCode: true,
-  deckId: true,
-  name: true,
-  description: true,
-  format: true
-});
-
 export type InsertDeck = z.infer<typeof insertDeckSchema>;
 export type Deck = typeof decks.$inferSelect;
-export type SharedDeck = typeof sharedDecks.$inferSelect;
-export type InsertSharedDeck = z.infer<typeof insertSharedDeckSchema>;
 
 export interface DeckCard {
   id: string;
@@ -96,6 +73,7 @@ export interface DeckCard {
   imageUrl: string;
 }
 
+// New types for metadata and analysis
 export interface DeckAnalysis {
   manaCurve: Record<number, number>;
   colorDistribution: Record<string, number>;

@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Download, ArrowLeft, Trash2, Share2 } from "lucide-react";
+import { Download, ArrowLeft, Trash2 } from "lucide-react";
 import type { Deck, DeckCard } from "@shared/schema";
 import type { ScryfallCard } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
@@ -25,16 +25,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { loadDecksFromLocal, saveDecksToLocal } from "@/lib/localStorage";
-import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
 
 const FORMATS = [
   { value: "standard", label: "Standard" },
@@ -52,33 +43,7 @@ export default function DeckPage() {
   const [name, setName] = useState("");
   const [deck, setDeck] = useState<Deck | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [shareCode, setShareCode] = useState<string | null>(null);
   const { toast } = useToast();
-
-  const shareDeckMutation = useMutation({
-    mutationFn: async () => {
-      if (!deck?.id) return null;
-      const response = await apiRequest('POST', `/api/decks/${deck.id}/share`);
-      const data = await response.json();
-      return data.shareCode as string;
-    },
-    onSuccess: (code) => {
-      if (code) {
-        setShareCode(code);
-        toast({
-          title: "Deck Shared",
-          description: "Your deck has been shared successfully.",
-        });
-      }
-    },
-    onError: (error) => {
-      toast({
-        title: "Share Failed",
-        description: error instanceof Error ? error.message : "Failed to share deck",
-        variant: "destructive",
-      });
-    },
-  });
 
   useEffect(() => {
     if (id === "new") return;
@@ -129,11 +94,6 @@ export default function DeckPage() {
       title: "Deck Deleted",
       description: "The deck has been deleted successfully."
     });
-  };
-
-  const handleShare = () => {
-    if (!deck) return;
-    shareDeckMutation.mutate();
   };
 
   const transformScryfallCard = (card: ScryfallCard): DeckCard => {
@@ -294,14 +254,6 @@ export default function DeckPage() {
               <Download className="mr-2 h-4 w-4" />
               Export
             </Button>
-            <Button 
-              onClick={handleShare} 
-              disabled={!deck || shareDeckMutation.isPending} 
-              className="w-full sm:w-auto"
-            >
-              <Share2 className="mr-2 h-4 w-4" />
-              {shareDeckMutation.isPending ? "Sharing..." : "Share"}
-            </Button>
           </div>
 
           {deck && (
@@ -342,22 +294,6 @@ export default function DeckPage() {
           />
         </div>
       </div>
-
-      <Dialog open={!!shareCode} onOpenChange={() => setShareCode(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Share Your Deck</DialogTitle>
-            <DialogDescription>
-              Share this code with others to let them view your deck:
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex items-center justify-center p-4">
-            <code className="bg-muted px-4 py-2 rounded-md text-lg font-mono">
-              {shareCode}
-            </code>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>

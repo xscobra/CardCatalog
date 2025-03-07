@@ -6,14 +6,12 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import DeckPage from "@/pages/deck";
-import SharedDeckPage from "@/pages/shared-deck";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/deck/:id" component={DeckPage} />
-      <Route path="/shared/:code" component={SharedDeckPage} />
       <Route component={NotFound} />
     </Switch>
   );
