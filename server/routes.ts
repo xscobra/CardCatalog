@@ -1,9 +1,8 @@
 import { Router } from "express";
 import { storage } from "./storage";
-import { insertDeckSchema, insertSharedDeckSchema } from "@shared/schema";
+import { insertDeckSchema } from "@shared/schema";
 import type { Express } from "express";
 import { createServer } from "http";
-import { nanoid } from 'nanoid';
 
 export async function registerRoutes(app: Express) {
   const api = Router();
@@ -49,50 +48,6 @@ export async function registerRoutes(app: Express) {
       return;
     }
     res.json({ success: true });
-  });
-
-  // Shared deck routes
-  api.post("/decks/:id/share", async (req, res) => {
-    const deckId = Number(req.params.id);
-    const deck = await storage.getDeck(deckId);
-
-    if (!deck) {
-      res.status(404).json({ message: "Deck not found" });
-      return;
-    }
-
-    // Generate a unique 8-character share code
-    const shareCode = nanoid(8);
-
-    const sharedDeck = await storage.createSharedDeck({
-      shareCode,
-      deckId,
-      name: deck.name,
-      description: deck.description,
-      format: deck.format,
-      cards: deck.cards
-    });
-
-    res.json({ shareCode: sharedDeck.shareCode });
-  });
-
-  api.get("/shared/:code", async (req, res) => {
-    const sharedDeck = await storage.getSharedDeck(req.params.code);
-
-    if (!sharedDeck) {
-      res.status(404).json({ message: "Shared deck not found" });
-      return;
-    }
-
-    if (!sharedDeck.isActive) {
-      res.status(410).json({ message: "This shared deck is no longer available" });
-      return;
-    }
-
-    // Increment view count
-    await storage.incrementSharedDeckViews(sharedDeck.id);
-
-    res.json(sharedDeck);
   });
 
   // Price history routes
