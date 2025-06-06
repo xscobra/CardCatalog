@@ -15,21 +15,14 @@ interface CardSearchProps {
 
 export function CardSearch({ onCardSelect }: CardSearchProps) {
   const [search, setSearch] = useState("");
+  const [inputValue, setInputValue] = useState("");
   const { toast } = useToast();
 
   const { data: cards, isLoading, error } = useQuery({
     queryKey: ["cards", search],
     queryFn: () => searchCards(search),
     enabled: search.length > 2,
-    keepPreviousData: true, // Keep showing previous results while loading new ones
     retry: false, // Don't retry on error as it's likely a user input issue
-    onError: (err) => {
-      toast({
-        title: "Search Error",
-        description: err instanceof Error ? err.message : "Failed to search cards",
-        variant: "destructive",
-      });
-    },
   });
 
   // Debounce the search input to prevent too many API calls
@@ -37,6 +30,12 @@ export function CardSearch({ onCardSelect }: CardSearchProps) {
     debounce((value: string) => setSearch(value), 300),
     []
   );
+
+  const handleCardSelect = (card: ScryfallCard) => {
+    onCardSelect(card);
+    setInputValue("");
+    setSearch("");
+  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,7 +48,11 @@ export function CardSearch({ onCardSelect }: CardSearchProps) {
         <form onSubmit={handleSearch} className="flex gap-2">
           <Input
             placeholder="Search for a card..."
-            onChange={(e) => debouncedSetSearch(e.target.value)}
+            value={inputValue}
+            onChange={(e) => {
+              setInputValue(e.target.value);
+              debouncedSetSearch(e.target.value);
+            }}
             className="flex-1"
           />
           <Button type="submit" disabled={isLoading}>
@@ -73,7 +76,7 @@ export function CardSearch({ onCardSelect }: CardSearchProps) {
                   key={card.id}
                   variant="ghost"
                   className="w-full justify-start"
-                  onClick={() => onCardSelect(card)}
+                  onClick={() => handleCardSelect(card)}
                 >
                   {card.name}
                 </Button>
