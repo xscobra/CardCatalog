@@ -80,10 +80,30 @@ export function CardSearchSection() {
     });
   };
 
-  const handleSetSelection = (cardId: string, selectedSet: DeckCard["selectedSet"]) => {
-    const updatedCards = cards.map(card => 
-      card.id === cardId ? { ...card, selectedSet } : card
-    );
+  const handleSetSelection = (cardId: string, selectedSet: DeckCard["selectedSet"] & { imageUrl?: string; cardId?: string }) => {
+    const updatedCards = cards.map(card => {
+      if (card.id === cardId && selectedSet) {
+        // Update both the selected set and the main card display to match the selected printing
+        return {
+          ...card,
+          selectedSet: {
+            code: selectedSet.code,
+            name: selectedSet.name,
+            symbol: selectedSet.symbol,
+            prices: selectedSet.prices
+          },
+          prices: selectedSet.prices,
+          imageUrl: selectedSet.imageUrl || card.imageUrl,
+          // Update the card's main set info to reflect the selected printing
+          sets: [{
+            code: selectedSet.code,
+            name: selectedSet.name,
+            symbol: selectedSet.symbol
+          }]
+        };
+      }
+      return card;
+    });
     setCards(updatedCards);
     saveWishlistToLocal(updatedCards);
   };
@@ -127,26 +147,36 @@ export function CardSearchSection() {
                       onCardClick={() => setSelectedCard(card)}
                     />
                     {card.selectedSet && (
-                      <div className="ml-4 p-2 bg-muted rounded-md text-sm">
-                        <div className="flex items-center gap-2">
+                      <div className="ml-4 p-3 bg-muted rounded-md text-sm border-l-4 border-primary">
+                        <div className="flex items-center gap-3">
                           <img
                             src={card.selectedSet.symbol}
                             alt={card.selectedSet.name}
-                            className="w-4 h-4"
+                            className="w-5 h-5 flex-shrink-0"
                             onError={(e) => {
                               e.currentTarget.style.display = "none";
                             }}
                           />
-                          <span>{card.selectedSet.name}</span>
-                          <div className="ml-auto flex gap-2">
+                          <div className="flex-1">
+                            <div className="font-medium">{card.selectedSet.name}</div>
+                            <div className="text-xs text-muted-foreground uppercase">
+                              {card.selectedSet.code}
+                            </div>
+                          </div>
+                          <div className="flex gap-2 flex-wrap">
                             {card.selectedSet.prices.tcgplayer && (
-                              <Badge variant="secondary">
+                              <Badge variant="secondary" className="text-xs">
                                 TCG: ${card.selectedSet.prices.tcgplayer.toFixed(2)}
                               </Badge>
                             )}
                             {card.selectedSet.prices.cardkingdom && (
-                              <Badge variant="outline">
+                              <Badge variant="outline" className="text-xs">
                                 CK: ${card.selectedSet.prices.cardkingdom.toFixed(2)}
+                              </Badge>
+                            )}
+                            {!card.selectedSet.prices.tcgplayer && !card.selectedSet.prices.cardkingdom && (
+                              <Badge variant="secondary" className="text-xs">
+                                No pricing data
                               </Badge>
                             )}
                           </div>
