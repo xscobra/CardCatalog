@@ -62,8 +62,8 @@ export function DeckList({
 
   return (
     <div className="space-y-6">
-      {/* Desktop View */}
-      <div className="hidden md:block space-y-8">
+      {/* Always visible deck view */}
+      <div className="block space-y-8">
         <div>
           <h2 className="text-2xl font-semibold mb-4">Deck List</h2>
           <ScrollArea className="h-[400px] px-1">
@@ -94,8 +94,8 @@ export function DeckList({
         <PriceFooter />
       </div>
 
-      {/* Mobile View */}
-      <div className="md:hidden">
+      {/* Mobile compact view - show tabs only on very small screens */}
+      <div className="sm:hidden">
         <Tabs defaultValue="deck" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="deck" className="text-lg py-3">
