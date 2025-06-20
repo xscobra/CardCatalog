@@ -19,6 +19,7 @@ interface DeckExportDialogProps {
   onOpenChange: (open: boolean) => void;
   deckName: string;
   cards: DeckCard[];
+  pulledCards: DeckCard[];
 }
 
 export function DeckExportDialog({
@@ -26,12 +27,13 @@ export function DeckExportDialog({
   onOpenChange,
   deckName,
   cards,
+  pulledCards,
 }: DeckExportDialogProps) {
   const [exportFormat, setExportFormat] = useState<"txt" | "pdf">("txt");
   const { toast } = useToast();
 
   const generateCardList = (): string => {
-    // Group cards by name and count quantities
+    // Group remaining cards by name and count quantities
     const cardCounts = new Map<string, number>();
     
     cards.forEach(card => {
@@ -39,18 +41,62 @@ export function DeckExportDialog({
       cardCounts.set(card.name, count + 1);
     });
 
-    // Format as "quantity cardname"
-    const cardList = Array.from(cardCounts.entries())
+    // Group pulled cards by name and count quantities
+    const pulledCardCounts = new Map<string, number>();
+    
+    pulledCards.forEach(card => {
+      const count = pulledCardCounts.get(card.name) || 0;
+      pulledCardCounts.set(card.name, count + 1);
+    });
+
+    // Calculate pulled card prices total
+    const pulledTotal = pulledCards.reduce((total, card) => {
+      const tcg = card.selectedSet?.prices.tcgplayer || 0;
+      const ck = card.selectedSet?.prices.cardkingdom || 0;
+      return {
+        tcgplayer: total.tcgplayer + tcg,
+        cardkingdom: total.cardkingdom + ck,
+      };
+    }, { tcgplayer: 0, cardkingdom: 0 });
+
+    // Format remaining cards
+    const remainingCardsList = Array.from(cardCounts.entries())
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([name, count]) => `${count} ${name}`)
       .join('\n');
 
-    return cardList;
+    // Format pulled cards with prices
+    const pulledCardsList = Array.from(pulledCardCounts.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([name, count]) => {
+        const card = pulledCards.find(c => c.name === name);
+        const tcgPrice = card?.selectedSet?.prices.tcgplayer;
+        const ckPrice = card?.selectedSet?.prices.cardkingdom;
+        const priceInfo = tcgPrice || ckPrice ? 
+          ` (TCG: $${tcgPrice?.toFixed(2) || 'N/A'}, CK: $${ckPrice?.toFixed(2) || 'N/A'})` : 
+          '';
+        return `${count} ${name}${priceInfo}`;
+      })
+      .join('\n');
+
+    // Combine sections
+    let result = '';
+    
+    if (remainingCardsList) {
+      result += 'NOT PULLED:\n' + remainingCardsList + '\n\n';
+    }
+    
+    if (pulledCardsList) {
+      result += 'PULLED CARDS:\n' + pulledCardsList + '\n\n';
+      result += `Pulled Cards Total: TCG $${pulledTotal.tcgplayer.toFixed(2)}, CK $${pulledTotal.cardkingdom.toFixed(2)}`;
+    }
+
+    return result.trim();
   };
 
   const exportToTxt = () => {
     const cardList = generateCardList();
-    const content = `${deckName}\n${'='.repeat(deckName.length)}\n\n${cardList}\n\nTotal Cards: ${cards.length}`;
+    const content = `${deckName}\n${'='.repeat(deckName.length)}\n\n${cardList}\n\nTotal Remaining Cards: ${cards.length}\nTotal Pulled Cards: ${pulledCards.length}`;
     
     const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);

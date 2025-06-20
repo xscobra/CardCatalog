@@ -56,6 +56,7 @@ export default function Home() {
       format: "standard",
       cards: cards,
       pickedUpCards: [],
+      pulledCards: [],
     };
 
     const updatedDecks = [...decks, newDeck];
