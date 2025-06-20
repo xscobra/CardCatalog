@@ -31,6 +31,8 @@ export function SetSelector({
     queryKey: ["card-prints", cardName],
     queryFn: () => getCardPrints(cardName),
     enabled: open && !!cardName,
+    staleTime: 60 * 60 * 1000, // Consider data fresh for 1 hour
+    cacheTime: 2 * 60 * 60 * 1000, // Keep in cache for 2 hours
   });
 
   const handleSetSelect = (card: ScryfallCard) => {
