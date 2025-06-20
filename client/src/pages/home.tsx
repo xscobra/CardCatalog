@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { Link } from "wouter";
-import { Plus, Trash2 } from "lucide-react";
+import { Link, useLocation } from "wouter";
+import { Plus, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import type { Deck } from "@shared/schema";
+import type { Deck, DeckCard } from "@shared/schema";
 import { WishlistSection } from "@/components/wishlist-section";
+import { DeckImportDialog } from "@/components/deck-import-dialog";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -16,11 +17,19 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { loadDecksFromLocal, saveDecksToLocal } from "@/lib/localStorage";
 
 export default function Home() {
   const [decks, setDecks] = useState<Deck[]>([]);
   const [deckToDelete, setDeckToDelete] = useState<Deck | null>(null);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -40,16 +49,49 @@ export default function Home() {
     });
   };
 
+  const handleImportDeck = (deckName: string, cards: DeckCard[]) => {
+    const newDeck: Deck = {
+      id: Date.now(),
+      name: deckName,
+      format: "standard",
+      cards: cards,
+      pickedUpCards: [],
+    };
+
+    const updatedDecks = [...decks, newDeck];
+    setDecks(updatedDecks);
+    saveDecksToLocal(updatedDecks);
+    
+    // Navigate to the new deck
+    setLocation(`/deck/${newDeck.id}`);
+  };
+
   return (
     <div className="container mx-auto p-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-4xl font-bold">My Deck Lists</h1>
-        <Link href="/deck/new">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            New Deck
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                New Deck
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem asChild>
+                <Link href="/deck/new" className="w-full">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Empty Deck
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowImportDialog(true)}>
+                <Upload className="mr-2 h-4 w-4" />
+                Import Card List
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -81,6 +123,12 @@ export default function Home() {
       </div>
 
       <WishlistSection />
+
+      <DeckImportDialog
+        open={showImportDialog}
+        onOpenChange={setShowImportDialog}
+        onImport={handleImportDeck}
+      />
 
       <AlertDialog
         open={!!deckToDelete}
