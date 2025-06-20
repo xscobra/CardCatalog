@@ -9,9 +9,8 @@ import { Card, CardContent } from "@/components/ui/card";
 
 interface DeckListProps {
   cards: DeckCard[];
-  pickedUpCards: DeckCard[];
   pulledCards: DeckCard[];
-  onCardMove: (card: DeckCard, toPickedUp: boolean) => void;
+  onCardMove: (card: DeckCard, remove: boolean) => void;
   onCardPull: (card: DeckCard) => void;
   onUpdatePulledCard: (cardId: string, selectedSet: DeckCard["selectedSet"]) => void;
   onRemovePulledCard: (cardId: string) => void;
@@ -91,23 +90,6 @@ export function DeckList({
         </div>
 
         <div>
-          <h2 className="text-2xl font-semibold mb-4">Picked Up</h2>
-          <ScrollArea className="h-[200px] px-1">
-            {pickedUpCards.map((card) => (
-              <CardRow
-                key={`picked-${card.id}`}
-                card={card}
-                onRemove={() => handleCardMove(card, false)}
-                onCardClick={() => setSelectedCard(card)}
-                onSetClick={() => {}}
-                format={format}
-                onPriceUpdate={onPriceUpdate}
-              />
-            ))}
-          </ScrollArea>
-        </div>
-        
-        <div>
           <h2 className="text-2xl font-semibold mb-4">Pulled Cards</h2>
           <PulledCardsSection
             pulledCards={pulledCards}
@@ -122,14 +104,11 @@ export function DeckList({
       {/* Mobile View */}
       <div className="md:hidden">
         <Tabs defaultValue="deck" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="deck" className="text-sm py-3">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="deck" className="text-lg py-3">
               Deck ({cards.length})
             </TabsTrigger>
-            <TabsTrigger value="picked" className="text-sm py-3">
-              Picked Up ({pickedUpCards.length})
-            </TabsTrigger>
-            <TabsTrigger value="pulled" className="text-sm py-3">
+            <TabsTrigger value="pulled" className="text-lg py-3">
               Pulled ({pulledCards.length})
             </TabsTrigger>
           </TabsList>
@@ -139,7 +118,7 @@ export function DeckList({
                 <CardRow
                   key={`deck-${card.id}`}
                   card={card}
-                  onRemove={() => handleCardMove(card, true)}
+                  onRemove={() => handleCardMove(card, false)}
                   onCardClick={() => setSelectedCard(card)}
                   onPull={() => handleCardPull(card)}
                   onSetClick={() => {}}
@@ -149,21 +128,7 @@ export function DeckList({
               ))}
             </ScrollArea>
           </TabsContent>
-          <TabsContent value="picked" className="mt-4">
-            <ScrollArea className="h-[calc(100vh-16rem)] px-1">
-              {pickedUpCards.map((card) => (
-                <CardRow
-                  key={`picked-${card.id}`}
-                  card={card}
-                  onRemove={() => handleCardMove(card, false)}
-                  onCardClick={() => setSelectedCard(card)}
-                  onSetClick={() => {}}
-                  format={format}
-                  onPriceUpdate={onPriceUpdate}
-                />
-              ))}
-            </ScrollArea>
-          </TabsContent>
+
           <TabsContent value="pulled" className="mt-4">
             <PulledCardsSection
               pulledCards={pulledCards}

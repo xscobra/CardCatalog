@@ -151,21 +151,17 @@ export default function DeckPage() {
     saveDeck(updatedDeck);
   };
 
-  const handleCardMove = (card: DeckCard, toPickedUp: boolean) => {
+  const handleCardMove = (card: DeckCard, remove: boolean) => {
     if (!deck) return;
 
-    const updatedDeck = { ...deck };
-
-    if (toPickedUp) {
-      // Moving from deck to picked up
-      updatedDeck.cards = updatedDeck.cards.filter((c) => c.id !== card.id);
-      updatedDeck.pickedUpCards = [...updatedDeck.pickedUpCards, card];
-    } else {
-      // Removing card completely from picked up
-      updatedDeck.pickedUpCards = updatedDeck.pickedUpCards.filter((c) => c.id !== card.id);
+    if (remove) {
+      // Removing card completely from deck
+      const updatedDeck = {
+        ...deck,
+        cards: deck.cards.filter((c) => c.id !== card.id)
+      };
+      saveDeck(updatedDeck);
     }
-
-    saveDeck(updatedDeck);
   };
 
   const handleCardPull = (card: DeckCard) => {
@@ -315,7 +311,6 @@ export default function DeckPage() {
         <div className="order-1 lg:order-2">
           <DeckList
             cards={deck?.cards || []}
-            pickedUpCards={deck?.pickedUpCards || []}
             pulledCards={deck?.pulledCards || []}
             onCardMove={handleCardMove}
             onCardPull={handleCardPull}
