@@ -117,7 +117,7 @@ export function DeckImportDialog({
 
           // Add multiple copies based on quantity
           for (let i = 0; i < quantity; i++) {
-            importedCards.push({ ...deckCard, id: `${card.id}-${i}` });
+            importedCards.push({ ...deckCard, id: `${card.id}-${Date.now()}-${i}` });
           }
         } catch (error) {
           errors.push(`Error importing ${name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
