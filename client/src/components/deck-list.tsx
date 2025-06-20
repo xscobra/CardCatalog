@@ -1,5 +1,6 @@
 import { type DeckCard } from "@shared/schema";
 import { CardRow } from "./card-row";
+import { PulledCardsSection } from "./pulled-cards-section";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -9,7 +10,11 @@ import { Card, CardContent } from "@/components/ui/card";
 interface DeckListProps {
   cards: DeckCard[];
   pickedUpCards: DeckCard[];
+  pulledCards: DeckCard[];
   onCardMove: (card: DeckCard, toPickedUp: boolean) => void;
+  onCardPull: (card: DeckCard) => void;
+  onUpdatePulledCard: (cardId: string, selectedSet: DeckCard["selectedSet"]) => void;
+  onRemovePulledCard: (cardId: string) => void;
   format?: string;
   totalPrices: {
     tcgplayer: number;
@@ -20,8 +25,12 @@ interface DeckListProps {
 
 export function DeckList({ 
   cards, 
-  pickedUpCards, 
-  onCardMove, 
+  pickedUpCards,
+  pulledCards,
+  onCardMove,
+  onCardPull,
+  onUpdatePulledCard,
+  onRemovePulledCard,
   format, 
   totalPrices,
   onPriceUpdate 
@@ -36,6 +45,10 @@ export function DeckList({
       // Removing from picked up section completely
       onCardMove(card, false);
     }
+  };
+
+  const handleCardPull = (card: DeckCard) => {
+    onCardPull(card);
   };
 
   const PriceFooter = () => (

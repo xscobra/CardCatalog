@@ -8,6 +8,7 @@ export const decks = pgTable("decks", {
   description: text("description"),
   cards: jsonb("cards").$type<DeckCard[]>().notNull().default([]),
   pickedUpCards: jsonb("picked_up_cards").$type<DeckCard[]>().notNull().default([]),
+  pulledCards: jsonb("pulled_cards").$type<DeckCard[]>().notNull().default([]),
   format: text("format"), // For tournament support
   isValid: boolean("is_valid").default(true), // For tournament legality
   notes: text("notes") // For deck notes
@@ -56,7 +57,9 @@ export const insertDeckSchema = createInsertSchema(decks).pick({
 });
 
 export type InsertDeck = z.infer<typeof insertDeckSchema>;
-export type Deck = typeof decks.$inferSelect;
+export type Deck = typeof decks.$inferSelect & {
+  pulledCards: DeckCard[];
+};
 
 export interface DeckCard {
   id: string;
@@ -71,6 +74,24 @@ export interface DeckCard {
     cardkingdom: number | null;
   };
   imageUrl: string;
+  selectedSet?: {
+    code: string;
+    name: string;
+    symbol: string;
+    prices: {
+      tcgplayer: number | null;
+      cardkingdom: number | null;
+    };
+  };
+  selectedSet?: {
+    code: string;
+    name: string;
+    symbol: string;
+    prices: {
+      tcgplayer: number | null;
+      cardkingdom: number | null;
+    };
+  };
 }
 
 // New types for metadata and analysis
