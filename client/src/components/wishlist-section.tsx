@@ -45,14 +45,9 @@ export function CardSearchSection() {
 
   const handleAddCard = (card: ScryfallCard) => {
     const transformedCard = transformScryfallCard(card);
-    if (cards.some(c => c.name === transformedCard.name)) {
-      toast({
-        title: "Card Already Added",
-        description: "This card is already in your search results.",
-        variant: "destructive"
-      });
-      return;
-    }
+    // Generate unique ID based on card name and timestamp to allow duplicates
+    transformedCard.id = `${card.id}-${Date.now()}`;
+    
     const updatedCards = [...cards, transformedCard];
     setCards(updatedCards);
     saveWishlistToLocal(updatedCards);
@@ -121,13 +116,18 @@ export function CardSearchSection() {
         <div className="grid gap-6 sm:gap-8 grid-cols-1 lg:grid-cols-2">
           <div>
             <CardSearch onCardSelect={handleAddCard} />
+            <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950 rounded-md border border-blue-200 dark:border-blue-800">
+              <p className="text-sm text-blue-700 dark:text-blue-300">
+                <strong>Tip:</strong> You can add the same card multiple times to compare prices across different sets and printings.
+              </p>
+            </div>
           </div>
           <div className="space-y-4">
             <h3 className="text-sm font-medium">Searched Cards</h3>
             <ScrollArea className="h-[300px] sm:h-[350px] lg:h-[400px]">
               {cards.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">
-                  No cards searched yet. Search for cards to see their prices!
+                  No cards searched yet. Search for cards to compare prices across different sets!
                 </p>
               ) : (
                 cards.map((card) => (
@@ -144,14 +144,19 @@ export function CardSearchSection() {
                         <div className="flex-1 min-w-0">
                           <h3 className="font-medium truncate">{card.name}</h3>
                           {!card.selectedSet ? (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setSelectorOpen(card.id)}
-                              className="mt-2 text-xs"
-                            >
-                              Select Set for Pricing
-                            </Button>
+                            <div className="mt-2 space-y-1">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setSelectorOpen(card.id)}
+                                className="text-xs"
+                              >
+                                Select Set for Pricing
+                              </Button>
+                              <p className="text-xs text-muted-foreground">
+                                Choose a specific printing to see prices
+                              </p>
+                            </div>
                           ) : (
                             <div className="mt-2 space-y-1">
                               <div className="flex items-center gap-2">
@@ -170,7 +175,7 @@ export function CardSearchSection() {
                                   onClick={() => setSelectorOpen(card.id)}
                                   className="text-xs h-6 px-2"
                                 >
-                                  Change
+                                  Change Set
                                 </Button>
                               </div>
                               <div className="flex gap-2">
