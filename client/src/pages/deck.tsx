@@ -11,11 +11,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Download, ArrowLeft, Trash2 } from "lucide-react";
+import { Download, ArrowLeft, Trash2, Upload } from "lucide-react";
 import type { Deck, DeckCard } from "@shared/schema";
 import type { ScryfallCard } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { DeckExportDialog } from "@/components/deck-export-dialog";
+import { DeckImportDialog } from "@/components/deck-import-dialog";
 import {
   AlertDialog,
   AlertDialogContent,
