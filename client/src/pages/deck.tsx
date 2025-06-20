@@ -226,6 +226,36 @@ export default function DeckPage() {
     setShowExportDialog(true);
   };
 
+  const handleImportCards = (deckName: string, cards: DeckCard[]) => {
+    if (!deck) {
+      // Create new deck if none exists
+      const decks = loadDecksFromLocal();
+      const newDeck: Deck = {
+        id: Date.now(),
+        name: deckName,
+        format: null,
+        description: null,
+        cards: cards,
+        pulledCards: [],
+      };
+      saveDeck(newDeck);
+      setName(deckName);
+      setLocation(`/deck/${newDeck.id}`);
+    } else {
+      // Add cards to existing deck
+      const updatedDeck = {
+        ...deck,
+        cards: [...deck.cards, ...cards]
+      };
+      saveDeck(updatedDeck);
+    }
+    
+    toast({
+      title: "Cards Imported",
+      description: `Successfully imported ${cards.length} cards`,
+    });
+  };
+
   // Calculate total prices for the deck
   const calculateTotalPrices = () => {
     if (!deck) return { tcgplayer: 0, cardkingdom: 0 };
@@ -277,6 +307,10 @@ export default function DeckPage() {
               <Download className="mr-2 h-4 w-4" />
               Export
             </Button>
+            <Button onClick={() => setShowImportDialog(true)} className="w-full sm:w-auto">
+              <Upload className="mr-2 h-4 w-4" />
+              Import
+            </Button>
           </div>
 
           {deck && (
@@ -327,6 +361,12 @@ export default function DeckPage() {
         deckName={deck?.name || "Untitled Deck"}
         cards={deck?.cards || []}
         pulledCards={deck?.pulledCards || []}
+      />
+
+      <DeckImportDialog
+        open={showImportDialog}
+        onOpenChange={setShowImportDialog}
+        onImport={handleImportCards}
       />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
