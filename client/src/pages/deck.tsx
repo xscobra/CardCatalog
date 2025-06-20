@@ -280,7 +280,11 @@ export default function DeckPage() {
           <DeckList
             cards={deck?.cards || []}
             pickedUpCards={deck?.pickedUpCards || []}
+            pulledCards={deck?.pulledCards || []}
             onCardMove={handleCardMove}
+            onCardPull={handleCardPull}
+            onUpdatePulledCard={handleUpdatePulledCard}
+            onRemovePulledCard={handleRemovePulledCard}
             format={deck?.format || undefined}
             totalPrices={{ tcgplayer: totalTcg, cardkingdom: totalCk }}
             onPriceUpdate={handlePriceUpdate}
@@ -293,6 +297,7 @@ export default function DeckPage() {
         onOpenChange={setShowExportDialog}
         deckName={deck?.name || "Untitled Deck"}
         cards={deck?.cards || []}
+        pulledCards={deck?.pulledCards || []}
       />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
