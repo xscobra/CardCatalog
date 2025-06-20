@@ -16,7 +16,7 @@ import { Search } from "lucide-react";
 export function CardSearchSection() {
   const [cards, setCards] = useState<DeckCard[]>([]);
   const [selectedCard, setSelectedCard] = useState<DeckCard | null>(null);
-  const [setSelectorOpen, setSelectorOpen] = useState<string | null>(null);
+  const [selectorOpenCardId, setSelectorOpen] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -194,17 +194,17 @@ export function CardSearchSection() {
           </DialogContent>
         </Dialog>
 
-        {setSelectorOpen && (
+        {selectorOpenCardId && (
           <SetSelector
-            cardName={cards.find(c => c.id === setSelectorOpen)?.name || ""}
-            open={!!setSelectorOpen}
+            cardName={cards.find(c => c.id === selectorOpenCardId)?.name || ""}
+            open={!!selectorOpenCardId}
             onOpenChange={() => setSelectorOpen(null)}
             onSetSelect={(selectedSet) => {
-              if (setSelectorOpen) {
-                handleSetSelection(setSelectorOpen, selectedSet);
+              if (selectorOpenCardId) {
+                handleSetSelection(selectorOpenCardId, selectedSet);
               }
             }}
-            currentSelectedSet={cards.find(c => c.id === setSelectorOpen)?.selectedSet}
+            currentSelectedSet={cards.find(c => c.id === selectorOpenCardId)?.selectedSet}
           />
         )}
       </CardContent>

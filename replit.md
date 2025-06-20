@@ -36,11 +36,12 @@ This is a comprehensive Magic: The Gathering deck building application built wit
 - **Caching**: Local storage for frequently accessed data
 
 ### Core Features
-- **Card Search**: Real-time search with debounced API calls
+- **Card Search**: Real-time search with set selection and latest printing defaults
 - **Deck Management**: Create, edit, and organize decks by format
-- **Price Tracking**: Monitor card values across multiple vendors
+- **Price Tracking**: Monitor card values across multiple vendors with custom pricing logic
 - **Set Symbols**: Visual representation of card sets and printings
-- **Wishlist**: Separate collection management system
+- **Pulled Cards**: Track cards obtained with set-specific pricing
+- **Export System**: Custom pricing exports (commons $0.25, others rounded up)
 - **Mobile Support**: Responsive design with native Android app capability
 
 ## Data Flow
@@ -109,7 +110,10 @@ This is a comprehensive Magic: The Gathering deck building application built wit
 - **Configuration**: `drizzle.config.ts` with Neon connection
 
 ## Changelog
-- June 20, 2025. Initial setup
+- June 20, 2025: Initial setup with comprehensive MTG deck builder
+- June 20, 2025: Removed "Picked Up" section, simplified to two-column layout (Deck/Pulled Cards)
+- June 20, 2025: Implemented custom pricing logic for exports (commons $0.25, others rounded up)
+- June 20, 2025: Renamed Wishlist to "Card Search" with set selection functionality
 
 ## User Preferences
 
