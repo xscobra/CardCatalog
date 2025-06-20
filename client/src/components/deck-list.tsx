@@ -81,6 +81,8 @@ export function DeckList({
                 card={card}
                 onRemove={() => handleCardMove(card, true)}
                 onCardClick={() => setSelectedCard(card)}
+                onPull={() => handleCardPull(card)}
+                onSetClick={() => {}}
                 format={format}
                 onPriceUpdate={onPriceUpdate}
               />
@@ -97,11 +99,21 @@ export function DeckList({
                 card={card}
                 onRemove={() => handleCardMove(card, false)}
                 onCardClick={() => setSelectedCard(card)}
+                onSetClick={() => {}}
                 format={format}
                 onPriceUpdate={onPriceUpdate}
               />
             ))}
           </ScrollArea>
+        </div>
+        
+        <div>
+          <h2 className="text-2xl font-semibold mb-4">Pulled Cards</h2>
+          <PulledCardsSection
+            pulledCards={pulledCards}
+            onUpdatePulledCard={onUpdatePulledCard}
+            onRemovePulledCard={onRemovePulledCard}
+          />
         </div>
 
         <PriceFooter />
@@ -110,12 +122,15 @@ export function DeckList({
       {/* Mobile View */}
       <div className="md:hidden">
         <Tabs defaultValue="deck" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="deck" className="text-lg py-3">
-              Deck List ({cards.length})
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="deck" className="text-sm py-3">
+              Deck ({cards.length})
             </TabsTrigger>
-            <TabsTrigger value="picked" className="text-lg py-3">
+            <TabsTrigger value="picked" className="text-sm py-3">
               Picked Up ({pickedUpCards.length})
+            </TabsTrigger>
+            <TabsTrigger value="pulled" className="text-sm py-3">
+              Pulled ({pulledCards.length})
             </TabsTrigger>
           </TabsList>
           <TabsContent value="deck" className="mt-4">
@@ -126,6 +141,8 @@ export function DeckList({
                   card={card}
                   onRemove={() => handleCardMove(card, true)}
                   onCardClick={() => setSelectedCard(card)}
+                  onPull={() => handleCardPull(card)}
+                  onSetClick={() => {}}
                   format={format}
                   onPriceUpdate={onPriceUpdate}
                 />
@@ -140,11 +157,19 @@ export function DeckList({
                   card={card}
                   onRemove={() => handleCardMove(card, false)}
                   onCardClick={() => setSelectedCard(card)}
+                  onSetClick={() => {}}
                   format={format}
                   onPriceUpdate={onPriceUpdate}
                 />
               ))}
             </ScrollArea>
+          </TabsContent>
+          <TabsContent value="pulled" className="mt-4">
+            <PulledCardsSection
+              pulledCards={pulledCards}
+              onUpdatePulledCard={onUpdatePulledCard}
+              onRemovePulledCard={onRemovePulledCard}
+            />
           </TabsContent>
         </Tabs>
 

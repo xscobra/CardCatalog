@@ -83,15 +83,6 @@ export interface DeckCard {
       cardkingdom: number | null;
     };
   };
-  selectedSet?: {
-    code: string;
-    name: string;
-    symbol: string;
-    prices: {
-      tcgplayer: number | null;
-      cardkingdom: number | null;
-    };
-  };
 }
 
 // New types for metadata and analysis

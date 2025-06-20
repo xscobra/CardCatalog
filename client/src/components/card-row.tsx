@@ -31,6 +31,7 @@ interface CardRowProps {
   onRemove: () => void;
   onSetClick: (setName: string) => void;
   onCardClick: () => void;
+  onPull?: () => void;
   format?: string;
   onPriceUpdate?: (cardId: string, newPrices: { tcgplayer: number | null; cardkingdom: number | null }) => void;
 }
@@ -39,7 +40,8 @@ export function CardRow({
   card, 
   onRemove, 
   onSetClick, 
-  onCardClick, 
+  onCardClick,
+  onPull,
   format,
   onPriceUpdate 
 }: CardRowProps) {
@@ -68,10 +70,15 @@ export function CardRow({
   };
 
   const handleDragEnd = (_: any, info: PanInfo) => {
-    if (Math.abs(info.offset.x) > 100) {
-      if (info.offset.x < 0) {
-        onRemove();
-      }
+    const threshold = 150;
+    const pullThreshold = 300;
+    
+    if (Math.abs(info.offset.x) > pullThreshold && onPull) {
+      // Far swipe triggers pull
+      onPull();
+    } else if (Math.abs(info.offset.x) > threshold) {
+      // Regular swipe triggers remove
+      onRemove();
     }
     setIsDragging(false);
   };
