@@ -1,0 +1,116 @@
+# MTG Deck Builder - Replit Project Guide
+
+## Overview
+
+This is a comprehensive Magic: The Gathering deck building application built with modern web technologies. The application provides a full-featured deck management system with card search, price tracking, wishlist functionality, and mobile support through Capacitor for Android deployment.
+
+## System Architecture
+
+### Frontend Architecture
+- **Framework**: React 18 with TypeScript
+- **Routing**: Wouter for lightweight client-side routing
+- **State Management**: TanStack Query (React Query) for server state management
+- **UI Components**: Radix UI primitives with Tailwind CSS styling
+- **Build Tool**: Vite for fast development and optimized builds
+- **Mobile**: Capacitor for native Android app packaging
+
+### Backend Architecture
+- **Server**: Express.js with TypeScript
+- **Database**: PostgreSQL with Drizzle ORM
+- **Database Provider**: Neon (serverless PostgreSQL)
+- **API Integration**: Scryfall API for Magic: The Gathering card data
+- **Development**: Hot reload with Vite middleware integration
+
+## Key Components
+
+### Database Schema
+- **Decks**: Core deck storage with card collections and metadata
+- **Price History**: Historical price tracking for cards from multiple sources
+- **Price Alerts**: User-configurable price change notifications
+- **Card Metadata**: Cached card information for performance
+- **Wishlist Cards**: Separate collection for desired cards
+
+### API Integration
+- **Scryfall API**: Primary source for card data, images, and pricing
+- **Rate Limiting**: Intelligent request queuing to respect API limits
+- **Caching**: Local storage for frequently accessed data
+
+### Core Features
+- **Card Search**: Real-time search with debounced API calls
+- **Deck Management**: Create, edit, and organize decks by format
+- **Price Tracking**: Monitor card values across multiple vendors
+- **Set Symbols**: Visual representation of card sets and printings
+- **Wishlist**: Separate collection management system
+- **Mobile Support**: Responsive design with native Android app capability
+
+## Data Flow
+
+### Client-Side Storage
+- Uses browser localStorage for offline functionality
+- Automatic synchronization with server when available
+- Persistent deck and wishlist data across sessions
+
+### Server Integration
+- RESTful API endpoints for deck CRUD operations
+- Price history tracking and alert management
+- Database-backed persistence with Drizzle ORM
+- Connection pooling for optimal performance
+
+### External API Flow
+1. User searches for cards through the interface
+2. Debounced search triggers Scryfall API request
+3. Rate limiter queues requests to prevent API abuse
+4. Results are cached locally and displayed
+5. Card metadata is optionally stored in database
+
+## External Dependencies
+
+### Core Dependencies
+- **@neondatabase/serverless**: PostgreSQL database connectivity
+- **@tanstack/react-query**: Server state management and caching
+- **@radix-ui/***: Accessible UI component primitives
+- **axios**: HTTP client with interceptors and error handling
+- **drizzle-orm**: Type-safe database ORM
+- **wouter**: Lightweight React router
+
+### Development Dependencies
+- **Vite**: Build tool and development server
+- **TypeScript**: Static type checking
+- **Tailwind CSS**: Utility-first CSS framework
+- **Capacitor**: Cross-platform native runtime
+
+### External APIs
+- **Scryfall API**: Magic: The Gathering card database
+- **Set symbol CDN**: Card set imagery and icons
+
+## Deployment Strategy
+
+### Development Environment
+- **Runtime**: Node.js 20
+- **Database**: PostgreSQL 16
+- **Port**: 5000 (configurable)
+- **Hot Reload**: Enabled through Vite middleware
+
+### Production Deployment
+- **Platform**: Google Cloud Run (configured in .replit)
+- **Build Command**: `npm run build`
+- **Start Command**: `npm run start`
+- **Database**: Neon serverless PostgreSQL
+- **Static Assets**: Served from dist/public directory
+
+### Mobile Deployment
+- **Android**: Capacitor-based native app
+- **Build**: `android-build.sh` script for packaging
+- **Platform**: Android Studio project in `/android` directory
+
+### Database Migrations
+- **Tool**: Drizzle Kit for schema management
+- **Command**: `npm run db:push` for schema synchronization
+- **Configuration**: `drizzle.config.ts` with Neon connection
+
+## Changelog
+- June 20, 2025. Initial setup
+
+## User Preferences
+
+Preferred communication style: Simple, everyday language.
