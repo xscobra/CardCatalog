@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import type { Deck, DeckCard } from "@shared/schema";
-import { WishlistSection } from "@/components/wishlist-section";
+import { CardSearchSection } from "@/components/wishlist-section";
 import { DeckImportDialog } from "@/components/deck-import-dialog";
 import {
   AlertDialog,
@@ -114,7 +114,7 @@ export default function Home() {
             <CardContent>
               <Link href={`/deck/${deck.id}`}>
                 <p className="text-sm text-muted-foreground">
-                  {deck.cards.length} cards ({deck.pickedUpCards.length} picked up)
+                  {deck.cards.length} cards ({deck.pulledCards?.length || 0} pulled)
                 </p>
               </Link>
             </CardContent>
