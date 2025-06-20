@@ -268,7 +268,9 @@ export function DeckExportDialog({
               <strong>Pulled cards:</strong> {pulledCards.length}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              Export includes remaining deck cards and pulled cards with prices (if set).
+              Export includes remaining deck cards and pulled cards with custom pricing:<br/>
+              • Common rarity cards: $0.25<br/>
+              • Other cards: Rounded up to nearest $0.50 or dollar
             </p>
           </div>
         </div>

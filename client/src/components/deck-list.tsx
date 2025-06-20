@@ -23,8 +23,7 @@ interface DeckListProps {
 }
 
 export function DeckList({ 
-  cards, 
-  pickedUpCards,
+  cards,
   pulledCards,
   onCardMove,
   onCardPull,
@@ -36,14 +35,8 @@ export function DeckList({
 }: DeckListProps) {
   const [selectedCard, setSelectedCard] = useState<DeckCard | null>(null);
 
-  const handleCardMove = (card: DeckCard, toPickedUp: boolean) => {
-    if (toPickedUp && cards.includes(card)) {
-      // Moving from deck to picked up
-      onCardMove(card, true);
-    } else if (!toPickedUp && pickedUpCards.includes(card)) {
-      // Removing from picked up section completely
-      onCardMove(card, false);
-    }
+  const handleCardMove = (card: DeckCard, remove: boolean) => {
+    onCardMove(card, remove);
   };
 
   const handleCardPull = (card: DeckCard) => {

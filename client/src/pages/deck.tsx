@@ -134,9 +134,7 @@ export default function DeckPage() {
         format: null,
         description: null,
         cards: [transformScryfallCard(card)],
-        pickedUpCards: [],
-        isValid: null,
-        notes: null,
+        pulledCards: [],
       };
       saveDeck(newDeck);
       setLocation(`/deck/${newDeck.id}`);
