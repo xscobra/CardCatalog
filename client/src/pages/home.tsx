@@ -122,7 +122,7 @@ export default function Home() {
         ))}
       </div>
 
-      <WishlistSection />
+      <CardSearchSection />
 
       <DeckImportDialog
         open={showImportDialog}
