@@ -98,21 +98,21 @@ export function CardSearchSection() {
   );
 
   return (
-    <Card className="mt-8">
+    <Card className="mt-6 sm:mt-8">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Search className="h-5 w-5" />
+        <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+          <Search className="h-4 w-4 sm:h-5 sm:w-5" />
           Card Search
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid gap-8 grid-cols-1 md:grid-cols-2">
+        <div className="grid gap-6 sm:gap-8 grid-cols-1 lg:grid-cols-2">
           <div>
             <CardSearch onCardSelect={handleAddCard} />
           </div>
           <div className="space-y-4">
             <h3 className="text-sm font-medium">Searched Cards</h3>
-            <ScrollArea className="h-[400px]">
+            <ScrollArea className="h-[300px] sm:h-[350px] lg:h-[400px]">
               {cards.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">
                   No cards searched yet. Search for cards to see their prices!

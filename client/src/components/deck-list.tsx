@@ -63,10 +63,10 @@ export function DeckList({
   return (
     <div className="space-y-6">
       {/* Always visible deck view */}
-      <div className="block space-y-8">
+      <div className="block space-y-6 lg:space-y-8">
         <div>
-          <h2 className="text-2xl font-semibold mb-4">Deck List</h2>
-          <ScrollArea className="h-[400px] px-1">
+          <h2 className="text-xl sm:text-2xl font-semibold mb-4">Deck List</h2>
+          <ScrollArea className="h-[300px] sm:h-[350px] lg:h-[400px] px-1">
             {cards.map((card) => (
               <CardRow
                 key={`deck-${card.id}`}
@@ -83,7 +83,7 @@ export function DeckList({
         </div>
 
         <div>
-          <h2 className="text-2xl font-semibold mb-4">Pulled Cards</h2>
+          <h2 className="text-xl sm:text-2xl font-semibold mb-4">Pulled Cards</h2>
           <PulledCardsSection
             pulledCards={pulledCards}
             onUpdatePulledCard={onUpdatePulledCard}
@@ -98,15 +98,15 @@ export function DeckList({
       <div className="sm:hidden">
         <Tabs defaultValue="deck" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="deck" className="text-lg py-3">
+            <TabsTrigger value="deck" className="text-sm sm:text-base lg:text-lg py-2 sm:py-3">
               Deck ({cards.length})
             </TabsTrigger>
-            <TabsTrigger value="pulled" className="text-lg py-3">
+            <TabsTrigger value="pulled" className="text-sm sm:text-base lg:text-lg py-2 sm:py-3">
               Pulled ({pulledCards.length})
             </TabsTrigger>
           </TabsList>
           <TabsContent value="deck" className="mt-4">
-            <ScrollArea className="h-[calc(100vh-16rem)] px-1">
+            <ScrollArea className="h-[60vh] sm:h-[calc(100vh-16rem)] px-1">
               {cards.map((card) => (
                 <CardRow
                   key={`deck-${card.id}`}

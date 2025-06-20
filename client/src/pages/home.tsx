@@ -67,9 +67,9 @@ export default function Home() {
   };
 
   return (
-    <div className="container mx-auto p-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-4xl font-bold">My Deck Lists</h1>
+    <div className="container mx-auto p-4 sm:p-6 lg:p-8 min-h-screen">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold">My Deck Lists</h1>
         <div className="flex gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
