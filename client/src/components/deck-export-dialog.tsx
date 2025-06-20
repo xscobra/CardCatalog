@@ -1,0 +1,211 @@
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+  DialogHeader,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useToast } from "@/hooks/use-toast";
+import { Download, FileText, FileImage } from "lucide-react";
+import type { DeckCard } from "@shared/schema";
+
+interface DeckExportDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  deckName: string;
+  cards: DeckCard[];
+}
+
+export function DeckExportDialog({
+  open,
+  onOpenChange,
+  deckName,
+  cards,
+}: DeckExportDialogProps) {
+  const [exportFormat, setExportFormat] = useState<"txt" | "pdf">("txt");
+  const { toast } = useToast();
+
+  const generateCardList = (): string => {
+    // Group cards by name and count quantities
+    const cardCounts = new Map<string, number>();
+    
+    cards.forEach(card => {
+      const count = cardCounts.get(card.name) || 0;
+      cardCounts.set(card.name, count + 1);
+    });
+
+    // Format as "quantity cardname"
+    const cardList = Array.from(cardCounts.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([name, count]) => `${count} ${name}`)
+      .join('\n');
+
+    return cardList;
+  };
+
+  const exportToTxt = () => {
+    const cardList = generateCardList();
+    const content = `${deckName}\n${'='.repeat(deckName.length)}\n\n${cardList}\n\nTotal Cards: ${cards.length}`;
+    
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${deckName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const exportToPdf = async () => {
+    try {
+      // Create a simple HTML structure for PDF generation
+      const cardList = generateCardList();
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>${deckName}</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              margin: 40px;
+              line-height: 1.6;
+            }
+            h1 {
+              color: #333;
+              border-bottom: 2px solid #333;
+              padding-bottom: 10px;
+            }
+            .card-list {
+              white-space: pre-line;
+              font-family: 'Courier New', monospace;
+              background: #f5f5f5;
+              padding: 20px;
+              border-radius: 5px;
+              margin: 20px 0;
+            }
+            .summary {
+              margin-top: 30px;
+              padding: 15px;
+              background: #e8f4f8;
+              border-radius: 5px;
+            }
+          </style>
+        </head>
+        <body>
+          <h1>${deckName}</h1>
+          <div class="card-list">${cardList}</div>
+          <div class="summary">
+            <strong>Total Cards: ${cards.length}</strong><br>
+            Exported on: ${new Date().toLocaleDateString()}
+          </div>
+        </body>
+        </html>
+      `;
+
+      // Open the HTML in a new window for printing to PDF
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+        
+        // Wait a moment for content to load, then trigger print dialog
+        setTimeout(() => {
+          printWindow.print();
+        }, 500);
+      }
+    } catch (error) {
+      toast({
+        title: "Export Error",
+        description: "Failed to generate PDF. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleExport = () => {
+    if (cards.length === 0) {
+      toast({
+        title: "No Cards to Export",
+        description: "The deck list is empty.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (exportFormat === "txt") {
+      exportToTxt();
+    } else {
+      exportToPdf();
+    }
+
+    toast({
+      title: "Export Started",
+      description: `Exporting deck as ${exportFormat.toUpperCase()} file.`,
+    });
+
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Export Deck</DialogTitle>
+          <DialogDescription>
+            Export "{deckName}" card list in your preferred format.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-3">
+            <Label>Export Format</Label>
+            <RadioGroup value={exportFormat} onValueChange={(value: "txt" | "pdf") => setExportFormat(value)}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="txt" id="txt" />
+                <Label htmlFor="txt" className="flex items-center cursor-pointer">
+                  <FileText className="mr-2 h-4 w-4" />
+                  Text File (.txt) - Simple card list
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="pdf" id="pdf" />
+                <Label htmlFor="pdf" className="flex items-center cursor-pointer">
+                  <FileImage className="mr-2 h-4 w-4" />
+                  PDF File (.pdf) - Formatted document
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          <div className="bg-muted p-3 rounded-md">
+            <p className="text-sm text-muted-foreground">
+              <strong>Cards to export:</strong> {cards.length}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Only cards remaining in the main deck list will be exported (not picked up cards).
+            </p>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleExport}>
+            <Download className="mr-2 h-4 w-4" />
+            Export {exportFormat.toUpperCase()}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

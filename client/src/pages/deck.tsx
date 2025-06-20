@@ -15,6 +15,7 @@ import { Download, ArrowLeft, Trash2 } from "lucide-react";
 import type { Deck, DeckCard } from "@shared/schema";
 import type { ScryfallCard } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { DeckExportDialog } from "@/components/deck-export-dialog";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -43,6 +44,7 @@ export default function DeckPage() {
   const [name, setName] = useState("");
   const [deck, setDeck] = useState<Deck | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -189,18 +191,9 @@ export default function DeckPage() {
     }
   };
 
-  const exportDeck = () => {
+  const handleExportClick = () => {
     if (!deck) return;
-    const text = deck.cards
-      .map((card) => `${card.name} (${card.sets.map((s) => s.name).join(", ")})`)
-      .join("\n");
-
-    const blob = new Blob([text], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${deck.name}.txt`;
-    a.click();
+    setShowExportDialog(true);
   };
 
   // Calculate total prices for the deck
@@ -250,7 +243,7 @@ export default function DeckPage() {
 
         <div className="flex flex-wrap gap-4 items-center">
           <div className="flex flex-wrap gap-2">
-            <Button onClick={exportDeck} disabled={!deck} className="w-full sm:w-auto">
+            <Button onClick={handleExportClick} disabled={!deck} className="w-full sm:w-auto">
               <Download className="mr-2 h-4 w-4" />
               Export
             </Button>
@@ -294,6 +287,13 @@ export default function DeckPage() {
           />
         </div>
       </div>
+
+      <DeckExportDialog
+        open={showExportDialog}
+        onOpenChange={setShowExportDialog}
+        deckName={deck?.name || "Untitled Deck"}
+        cards={deck?.cards || []}
+      />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
