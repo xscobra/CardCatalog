@@ -39,15 +39,7 @@ export function CardSearchSection() {
         cardkingdom: card.prices.usd_foil ? parseFloat(card.prices.usd_foil) : null,
       },
       imageUrl: card.image_uris?.normal || card.card_faces?.[0]?.image_uris?.normal || "",
-      selectedSet: {
-        code: card.set,
-        name: card.set_name,
-        symbol: `https://svgs.scryfall.io/sets/${card.set}.svg`,
-        prices: {
-          tcgplayer: card.prices.usd ? parseFloat(card.prices.usd) : null,
-          cardkingdom: card.prices.usd_foil ? parseFloat(card.prices.usd_foil) : null,
-        }
-      }
+      // No default pricing - users must select a set to see prices
     };
   };
 
@@ -108,7 +100,7 @@ export function CardSearchSection() {
     saveWishlistToLocal(updatedCards);
   };
 
-  // Calculate total prices using selected set prices
+  // Calculate total prices using only selected set prices (no default prices)
   const totalPrices = cards.reduce(
     (totals, card) => ({
       tcgplayer: totals.tcgplayer + (card.selectedSet?.prices.tcgplayer || 0),
@@ -140,59 +132,90 @@ export function CardSearchSection() {
               ) : (
                 cards.map((card) => (
                   <div key={card.id} className="space-y-2">
-                    <CardRow
-                      card={card}
-                      onRemove={() => handleRemoveCard(card.id)}
-                      onSetClick={() => setSelectorOpen(card.id)}
-                      onCardClick={() => setSelectedCard(card)}
-                    />
-                    {card.selectedSet && (
-                      <div className="ml-4 p-3 bg-muted rounded-md text-sm border-l-4 border-primary">
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={card.selectedSet.symbol}
-                            alt={card.selectedSet.name}
-                            className="w-5 h-5 flex-shrink-0"
-                            onError={(e) => {
-                              e.currentTarget.style.display = "none";
-                            }}
-                          />
-                          <div className="flex-1">
-                            <div className="font-medium">{card.selectedSet.name}</div>
-                            <div className="text-xs text-muted-foreground uppercase">
-                              {card.selectedSet.code}
+                    <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                      <div className="flex items-center gap-3 flex-1">
+                        <img
+                          src={card.imageUrl}
+                          alt={card.name}
+                          className="w-12 h-16 rounded object-cover cursor-pointer"
+                          onClick={() => setSelectedCard(card)}
+                          loading="lazy"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium truncate">{card.name}</h3>
+                          {!card.selectedSet ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setSelectorOpen(card.id)}
+                              className="mt-2 text-xs"
+                            >
+                              Select Set for Pricing
+                            </Button>
+                          ) : (
+                            <div className="mt-2 space-y-1">
+                              <div className="flex items-center gap-2">
+                                <img
+                                  src={card.selectedSet.symbol}
+                                  alt={card.selectedSet.name}
+                                  className="w-4 h-4"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = "none";
+                                  }}
+                                />
+                                <span className="text-sm font-medium">{card.selectedSet.name}</span>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setSelectorOpen(card.id)}
+                                  className="text-xs h-6 px-2"
+                                >
+                                  Change
+                                </Button>
+                              </div>
+                              <div className="flex gap-2">
+                                {card.selectedSet.prices.tcgplayer && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    TCG: ${card.selectedSet.prices.tcgplayer.toFixed(2)}
+                                  </Badge>
+                                )}
+                                {card.selectedSet.prices.cardkingdom && (
+                                  <Badge variant="outline" className="text-xs">
+                                    CK: ${card.selectedSet.prices.cardkingdom.toFixed(2)}
+                                  </Badge>
+                                )}
+                                {!card.selectedSet.prices.tcgplayer && !card.selectedSet.prices.cardkingdom && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    No pricing data
+                                  </Badge>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                          <div className="flex gap-2 flex-wrap">
-                            {card.selectedSet.prices.tcgplayer && (
-                              <Badge variant="secondary" className="text-xs">
-                                TCG: ${card.selectedSet.prices.tcgplayer.toFixed(2)}
-                              </Badge>
-                            )}
-                            {card.selectedSet.prices.cardkingdom && (
-                              <Badge variant="outline" className="text-xs">
-                                CK: ${card.selectedSet.prices.cardkingdom.toFixed(2)}
-                              </Badge>
-                            )}
-                            {!card.selectedSet.prices.tcgplayer && !card.selectedSet.prices.cardkingdom && (
-                              <Badge variant="secondary" className="text-xs">
-                                No pricing data
-                              </Badge>
-                            )}
-                          </div>
+                          )}
                         </div>
                       </div>
-                    )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveCard(card.id)}
+                        className="text-destructive hover:text-destructive/80"
+                      >
+                        Remove
+                      </Button>
+                    </div>
                   </div>
                 ))
               )}
             </ScrollArea>
 
-            {/* Price totals footer */}
-            {cards.length > 0 && (
+            {/* Price totals footer - only show if cards have selected sets */}
+            {cards.some(card => card.selectedSet) && (
               <Card>
                 <CardContent className="p-4">
                   <div className="space-y-2">
+                    <div className="text-sm text-muted-foreground mb-2">
+                      Total for cards with selected sets:
+                    </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm font-medium">TCGplayer Total:</span>
                       <span className="text-lg font-bold">
