@@ -89,7 +89,99 @@ class RateLimiter {
   }
 }
 
-const rateLimiter = new RateLimiter();
+// Enhanced rate limiter for Scryfall API compliance
+class ScryfallRateLimiter {
+  private queue: Array<() => Promise<void>> = [];
+  private processing = false;
+  private requestTimes: number[] = [];
+  private readonly MAX_REQUESTS_PER_SECOND = 8; // Conservative limit (80% of Scryfall's 10/sec)
+  private readonly MIN_DELAY_MS = 125; // 125ms minimum delay
+  private lastRequestTime = 0;
+
+  async execute<T>(request: () => Promise<T>): Promise<T> {
+    return new Promise((resolve, reject) => {
+      this.queue.push(async () => {
+        try {
+          await this.waitForRateLimit();
+          const result = await this.makeRequest(request);
+          resolve(result);
+        } catch (error) {
+          // Handle 429 errors with exponential backoff
+          if (error instanceof Error && error.message.includes('429')) {
+            console.warn('Rate limit exceeded, implementing backoff');
+            await new Promise(resolve => setTimeout(resolve, 5000)); // 5 second backoff
+            try {
+              await this.waitForRateLimit();
+              const retryResult = await this.makeRequest(request);
+              resolve(retryResult);
+            } catch (retryError) {
+              reject(retryError);
+            }
+          } else {
+            reject(error);
+          }
+        }
+      });
+
+      this.processQueue();
+    });
+  }
+
+  private async makeRequest<T>(request: () => Promise<T>): Promise<T> {
+    this.recordRequestTime();
+    return await request();
+  }
+
+  private recordRequestTime() {
+    const now = Date.now();
+    this.requestTimes.push(now);
+    this.lastRequestTime = now;
+    
+    // Clean old request times (older than 1 second)
+    this.requestTimes = this.requestTimes.filter(time => now - time < 1000);
+  }
+
+  private async waitForRateLimit(): Promise<void> {
+    const now = Date.now();
+    
+    // Ensure minimum delay between requests
+    const timeSinceLastRequest = now - this.lastRequestTime;
+    if (timeSinceLastRequest < this.MIN_DELAY_MS) {
+      await new Promise(resolve => 
+        setTimeout(resolve, this.MIN_DELAY_MS - timeSinceLastRequest)
+      );
+    }
+
+    // Clean old request times
+    this.requestTimes = this.requestTimes.filter(time => now - time < 1000);
+
+    // If we're at the limit, wait until we can make another request
+    if (this.requestTimes.length >= this.MAX_REQUESTS_PER_SECOND) {
+      const oldestRequest = this.requestTimes[0];
+      const waitTime = 1000 - (now - oldestRequest) + 50; // Add 50ms buffer
+      if (waitTime > 0) {
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+      }
+    }
+  }
+
+  private async processQueue() {
+    if (this.processing || this.queue.length === 0) return;
+
+    this.processing = true;
+
+    while (this.queue.length > 0) {
+      const request = this.queue.shift();
+      if (request) {
+        await request();
+      }
+    }
+
+    this.processing = false;
+  }
+}
+
+const rateLimiter = new ScryfallRateLimiter();
 
 // Create axios instance with enhanced error handling
 const api = axios.create({
