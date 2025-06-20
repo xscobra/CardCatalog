@@ -216,18 +216,49 @@ api.interceptors.response.use(
   }
 );
 
-// Wrap API calls with rate limiter
 export const searchCards = async (query: string) => {
+  if (!query.trim()) return [];
+
   return rateLimiter.execute(async () => {
-    const response = await api.get(`/cards/search?q=${encodeURIComponent(query)}`);
-    return z.array(scryfallCardSchema).parse(response.data.data);
+    const encodedQuery = encodeURIComponent(query.trim());
+    const response = await fetch(`https://api.scryfall.com/cards/search?q=${encodedQuery}&order=name`, {
+      headers: {
+        'User-Agent': 'MTG-Deck-Builder/1.0 (Replit Application)'
+      }
+    });
+    
+    if (!response.ok) {
+      if (response.status === 404) return [];
+      if (response.status === 429) {
+        throw new Error('429: Rate limit exceeded');
+      }
+      throw new Error(`Search failed: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.data?.map((card: any) => scryfallCardSchema.parse(card)) || [];
   });
 };
 
 export const getCardPrints = async (cardName: string) => {
   return rateLimiter.execute(async () => {
-    const response = await api.get(`/cards/search?q=!"${encodeURIComponent(cardName)}" unique:prints`);
-    return z.array(scryfallCardSchema).parse(response.data.data);
+    const encodedName = encodeURIComponent(cardName);
+    const response = await fetch(`https://api.scryfall.com/cards/search?q=!"${encodedName}"&unique=prints&order=released`, {
+      headers: {
+        'User-Agent': 'MTG-Deck-Builder/1.0 (Replit Application)'
+      }
+    });
+    
+    if (!response.ok) {
+      if (response.status === 404) return [];
+      if (response.status === 429) {
+        throw new Error('429: Rate limit exceeded');
+      }
+      throw new Error(`Failed to fetch prints: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.data?.map((card: any) => scryfallCardSchema.parse(card)) || [];
   });
 };
 

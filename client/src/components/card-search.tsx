@@ -21,13 +21,19 @@ export function CardSearch({ onCardSelect }: CardSearchProps) {
   const { data: cards, isLoading, error } = useQuery({
     queryKey: ["cards", search],
     queryFn: () => searchCards(search),
-    enabled: search.length > 2,
-    retry: false, // Don't retry on error as it's likely a user input issue
+    enabled: search.length >= 3,
+    staleTime: 15 * 60 * 1000, // 15 minutes
+    cacheTime: 60 * 60 * 1000, // 1 hour
+    retry: (failureCount, error: any) => {
+      if (error?.message?.includes('429')) return false;
+      return failureCount < 1;
+    },
+    retryDelay: 2000,
   });
 
   // Debounce the search input to prevent too many API calls
   const debouncedSetSearch = useCallback(
-    debounce((value: string) => setSearch(value), 300),
+    debounce((value: string) => setSearch(value), 750),
     []
   );
 
@@ -47,7 +53,7 @@ export function CardSearch({ onCardSelect }: CardSearchProps) {
       <CardContent className="p-4">
         <form onSubmit={handleSearch} className="flex gap-2">
           <Input
-            placeholder="Search for a card..."
+            placeholder="Search for a card... (min 3 characters)"
             value={inputValue}
             onChange={(e) => {
               setInputValue(e.target.value);
@@ -64,7 +70,11 @@ export function CardSearch({ onCardSelect }: CardSearchProps) {
         {error && (
           <div className="mt-4 p-4 border rounded-md bg-destructive/10 text-destructive flex items-center gap-2">
             <AlertCircle className="h-4 w-4" />
-            <span>Failed to search cards. Please try again.</span>
+            <span>
+              {error instanceof Error && error.message.includes('429') 
+                ? 'Rate limit reached. Please wait a moment and try again.'
+                : 'Failed to search cards. Please try again.'}
+            </span>
           </div>
         )}
 
@@ -85,9 +95,15 @@ export function CardSearch({ onCardSelect }: CardSearchProps) {
           </ScrollArea>
         )}
 
-        {cards?.length === 0 && search.length > 2 && (
+        {cards?.length === 0 && search.length >= 3 && !isLoading && !error && (
           <div className="mt-4 text-center text-muted-foreground">
             No cards found matching your search.
+          </div>
+        )}
+
+        {search.length > 0 && search.length < 3 && (
+          <div className="mt-4 text-center text-muted-foreground">
+            Type at least 3 characters to search...
           </div>
         )}
       </CardContent>
