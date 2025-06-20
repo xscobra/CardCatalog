@@ -271,8 +271,8 @@ export default function DeckPage() {
           )}
         </div>
 
-        <div className="flex flex-wrap gap-4 items-center">
-          <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
             <Button onClick={handleExportClick} disabled={!deck} className="w-full sm:w-auto">
               <Download className="mr-2 h-4 w-4" />
               Export
@@ -284,7 +284,7 @@ export default function DeckPage() {
               value={deck.format || ""}
               onValueChange={handleFormatChange}
             >
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Select Format" />
               </SelectTrigger>
               <SelectContent>

@@ -114,6 +114,7 @@ This is a comprehensive Magic: The Gathering deck building application built wit
 - June 20, 2025: Removed "Picked Up" section, simplified to two-column layout (Deck/Pulled Cards)
 - June 20, 2025: Implemented custom pricing logic for exports (commons $0.25, others rounded up)
 - June 20, 2025: Renamed Wishlist to "Card Search" with set selection functionality
+- June 20, 2025: Implemented auto-scaling responsive design for all screen sizes with viewport-based scaling
 
 ## User Preferences
 
