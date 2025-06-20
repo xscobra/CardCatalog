@@ -168,6 +168,42 @@ export default function DeckPage() {
     saveDeck(updatedDeck);
   };
 
+  const handleCardPull = (card: DeckCard) => {
+    if (!deck) return;
+
+    const updatedDeck = { 
+      ...deck,
+      cards: deck.cards.filter(c => c.id !== card.id),
+      pulledCards: [...(deck.pulledCards || []), card]
+    };
+
+    saveDeck(updatedDeck);
+  };
+
+  const handleUpdatePulledCard = (cardId: string, selectedSet: DeckCard["selectedSet"]) => {
+    if (!deck) return;
+
+    const updatedDeck = {
+      ...deck,
+      pulledCards: (deck.pulledCards || []).map(card => 
+        card.id === cardId ? { ...card, selectedSet } : card
+      )
+    };
+
+    saveDeck(updatedDeck);
+  };
+
+  const handleRemovePulledCard = (cardId: string) => {
+    if (!deck) return;
+
+    const updatedDeck = {
+      ...deck,
+      pulledCards: (deck.pulledCards || []).filter(card => card.id !== cardId)
+    };
+
+    saveDeck(updatedDeck);
+  };
+
   const handlePriceUpdate = (cardId: string, newPrices: { tcgplayer: number | null; cardkingdom: number | null }) => {
     if (!deck) return;
 

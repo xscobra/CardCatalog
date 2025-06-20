@@ -178,7 +178,7 @@ export function DeckExportDialog({
   };
 
   const handleExport = () => {
-    if (cards.length === 0) {
+    if (cards.length === 0 && pulledCards.length === 0) {
       toast({
         title: "No Cards to Export",
         description: "The deck list is empty.",
@@ -234,10 +234,11 @@ export function DeckExportDialog({
 
           <div className="bg-muted p-3 rounded-md">
             <p className="text-sm text-muted-foreground">
-              <strong>Cards to export:</strong> {cards.length}
+              <strong>Remaining cards:</strong> {cards.length}<br/>
+              <strong>Pulled cards:</strong> {pulledCards.length}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              Only cards remaining in the main deck list will be exported (not picked up cards).
+              Export includes remaining deck cards and pulled cards with prices (if set).
             </p>
           </div>
         </div>
