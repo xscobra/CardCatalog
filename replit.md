@@ -115,6 +115,7 @@ This is a comprehensive Magic: The Gathering deck building application built wit
 - June 20, 2025: Implemented custom pricing logic for exports (commons $0.25, others rounded up)
 - June 20, 2025: Renamed Wishlist to "Card Search" with set selection functionality
 - June 20, 2025: Implemented auto-scaling responsive design for all screen sizes with viewport-based scaling
+- June 20, 2025: Enhanced Card Search to allow duplicate cards with different sets for price comparison
 
 ## User Preferences
 
