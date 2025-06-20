@@ -49,13 +49,30 @@ export function DeckExportDialog({
       pulledCardCounts.set(card.name, count + 1);
     });
 
-    // Calculate pulled card prices total
+    // Calculate pulled card prices total with custom pricing logic
     const pulledTotal = pulledCards.reduce((total, card) => {
-      const tcg = card.selectedSet?.prices.tcgplayer || 0;
-      const ck = card.selectedSet?.prices.cardkingdom || 0;
+      // Get card metadata to determine rarity - for now we'll use a simple approach
+      // Common cards = $0.25, everything else rounded up to nearest $0.50 or dollar
+      const basePrice = card.selectedSet?.prices.tcgplayer || card.selectedSet?.prices.cardkingdom || 0;
+      
+      let customPrice = 0;
+      if (basePrice > 0) {
+        // Assume common rarity for very low prices (under $0.50), everything else gets custom rounding
+        if (basePrice < 0.50) {
+          customPrice = 0.25; // Common rarity
+        } else {
+          // Round up to nearest $0.50 or dollar
+          if (basePrice < 1.0) {
+            customPrice = Math.ceil(basePrice * 2) / 2; // Round up to nearest $0.50
+          } else {
+            customPrice = Math.ceil(basePrice); // Round up to nearest dollar
+          }
+        }
+      }
+      
       return {
-        tcgplayer: total.tcgplayer + tcg,
-        cardkingdom: total.cardkingdom + ck,
+        tcgplayer: total.tcgplayer + customPrice,
+        cardkingdom: total.cardkingdom + customPrice,
       };
     }, { tcgplayer: 0, cardkingdom: 0 });
 
@@ -70,11 +87,24 @@ export function DeckExportDialog({
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([name, count]) => {
         const card = pulledCards.find(c => c.name === name);
-        const tcgPrice = card?.selectedSet?.prices.tcgplayer;
-        const ckPrice = card?.selectedSet?.prices.cardkingdom;
-        const priceInfo = tcgPrice || ckPrice ? 
-          ` (TCG: $${tcgPrice?.toFixed(2) || 'N/A'}, CK: $${ckPrice?.toFixed(2) || 'N/A'})` : 
-          '';
+        const basePrice = card?.selectedSet?.prices.tcgplayer || card?.selectedSet?.prices.cardkingdom || 0;
+        
+        let customPrice = 0;
+        if (basePrice > 0) {
+          // Common rarity pricing logic
+          if (basePrice < 0.50) {
+            customPrice = 0.25; // Common rarity
+          } else {
+            // Round up to nearest $0.50 or dollar
+            if (basePrice < 1.0) {
+              customPrice = Math.ceil(basePrice * 2) / 2; // Round up to nearest $0.50
+            } else {
+              customPrice = Math.ceil(basePrice); // Round up to nearest dollar
+            }
+          }
+        }
+        
+        const priceInfo = customPrice > 0 ? ` ($${customPrice.toFixed(2)})` : '';
         return `${count} ${name}${priceInfo}`;
       })
       .join('\n');
@@ -88,7 +118,7 @@ export function DeckExportDialog({
     
     if (pulledCardsList) {
       result += 'PULLED CARDS:\n' + pulledCardsList + '\n\n';
-      result += `Pulled Cards Total: TCG $${pulledTotal.tcgplayer.toFixed(2)}, CK $${pulledTotal.cardkingdom.toFixed(2)}`;
+      result += `Pulled Cards Total: $${pulledTotal.tcgplayer.toFixed(2)}`;
     }
 
     return result.trim();

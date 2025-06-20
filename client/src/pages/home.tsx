@@ -55,7 +55,6 @@ export default function Home() {
       name: deckName,
       format: "standard",
       cards: cards,
-      pickedUpCards: [],
       pulledCards: [],
     };
 
