@@ -106,7 +106,7 @@ export function CardSearchSection() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid gap-8 md:grid-cols-2">
+        <div className="grid gap-8 grid-cols-1 md:grid-cols-2">
           <div>
             <CardSearch onCardSelect={handleAddCard} />
           </div>
