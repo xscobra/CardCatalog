@@ -96,7 +96,7 @@ export function CardRow({
       exit={{ opacity: 0 }}
       whileTap={{ scale: 0.98 }}
     >
-      <Card className="mb-4">
+      <Card className="mb-4 bg-card/50 backdrop-blur-sm border-0 shadow-md hover:shadow-lg transition-all duration-200 hover:bg-card/80">
         <CardContent className="p-6">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             {/* Card Info Section */}

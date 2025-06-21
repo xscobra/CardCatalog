@@ -85,7 +85,7 @@ export function CardSearch({ onCardSelect }: CardSearchProps) {
                 <Button
                   key={card.id}
                   variant="ghost"
-                  className="w-full justify-start"
+                  className="w-full justify-start hover:bg-muted/50 transition-all duration-200 hover:shadow-md bg-background/50 backdrop-blur-sm shadow-sm hover:scale-[1.01]"
                   onClick={() => handleCardSelect(card)}
                 >
                   {card.name}
