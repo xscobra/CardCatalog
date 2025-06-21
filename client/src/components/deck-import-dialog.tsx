@@ -158,9 +158,20 @@ export function DeckImportDialog({
           return;
         }
 
-        const { name, cardList: fetchedCardList } = await fetchDeckFromUrl(deckUrl);
-        finalDeckName = finalDeckName || name;
-        finalCardList = fetchedCardList;
+        try {
+          const { name, cardList: fetchedCardList } = await fetchDeckFromUrl(deckUrl);
+          finalDeckName = finalDeckName || name;
+          finalCardList = fetchedCardList;
+        } catch (error) {
+          console.error('URL import failed:', error);
+          toast({
+            title: "Import Failed",
+            description: error instanceof Error ? error.message : "Failed to import from URL",
+            variant: "destructive",
+          });
+          setIsImporting(false);
+          return;
+        }
       }
 
       // Validate inputs

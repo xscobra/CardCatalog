@@ -7,6 +7,135 @@ import { createServer } from "http";
 export async function registerRoutes(app: Express) {
   const api = Router();
 
+  // External deck import endpoint
+  api.post("/import/deck", async (req, res) => {
+    try {
+      const { url } = req.body;
+      if (!url) {
+        return res.status(400).json({ error: "URL is required" });
+      }
+
+      const cleanUrl = url.trim();
+      let deckData = null;
+
+      // Moxfield API
+      if (cleanUrl.includes('moxfield.com')) {
+        const deckIdMatch = cleanUrl.match(/moxfield\.com\/decks\/([a-zA-Z0-9_-]+)/);
+        if (deckIdMatch) {
+          const deckId = deckIdMatch[1];
+          
+          try {
+            const response = await fetch(`https://api2.moxfield.com/v2/decks/all/${deckId}`, {
+              headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'MTG-Deck-Builder/1.0'
+              }
+            });
+            
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            const mainboard = data.mainboard || data.boards?.mainboard || {};
+            const cardList = Object.entries(mainboard)
+              .map(([cardId, cardInfo]: [string, any]) => {
+                const quantity = cardInfo.quantity || cardInfo.count || 1;
+                const name = cardInfo.card?.name || cardInfo.name || 'Unknown Card';
+                return `${quantity} ${name}`;
+              })
+              .join('\n');
+            
+            deckData = { 
+              name: data.name || data.title || 'Moxfield Deck', 
+              cardList 
+            };
+          } catch (error) {
+            console.error('Moxfield import error:', error);
+            return res.status(500).json({ error: 'Failed to fetch Moxfield deck' });
+          }
+        }
+      }
+      
+      // MTGGoldfish API
+      if (cleanUrl.includes('mtggoldfish.com')) {
+        const deckIdMatch = cleanUrl.match(/mtggoldfish\.com\/deck\/(\d+)/);
+        if (deckIdMatch) {
+          const deckId = deckIdMatch[1];
+          
+          try {
+            const response = await fetch(`https://www.mtggoldfish.com/deck/download/${deckId}`, {
+              headers: {
+                'User-Agent': 'MTG-Deck-Builder/1.0'
+              }
+            });
+            
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const textData = await response.text();
+            const lines = textData.split('\n').filter(line => line.trim());
+            const deckName = lines.find(line => line.includes('//'))?.replace('//', '').trim() || 'MTGGoldfish Deck';
+            
+            deckData = { name: deckName, cardList: textData };
+          } catch (error) {
+            console.error('MTGGoldfish import error:', error);
+            return res.status(500).json({ error: 'Failed to fetch MTGGoldfish deck' });
+          }
+        }
+      }
+      
+      // Archidekt API
+      if (cleanUrl.includes('archidekt.com')) {
+        const deckIdMatch = cleanUrl.match(/archidekt\.com\/decks\/(\d+)/);
+        if (deckIdMatch) {
+          const deckId = deckIdMatch[1];
+          
+          try {
+            const response = await fetch(`https://archidekt.com/api/decks/${deckId}/`, {
+              headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'MTG-Deck-Builder/1.0'
+              }
+            });
+            
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            const cardList = (data.cards || [])
+              .filter((card: any) => !card.categories || card.categories.includes('Maindeck') || card.categories[0] === 'Maindeck')
+              .map((card: any) => {
+                const quantity = card.quantity || 1;
+                const name = card.card?.oracleCard?.name || card.card?.name || 'Unknown Card';
+                return `${quantity} ${name}`;
+              })
+              .join('\n');
+            
+            deckData = { 
+              name: data.name || 'Archidekt Deck', 
+              cardList 
+            };
+          } catch (error) {
+            console.error('Archidekt import error:', error);
+            return res.status(500).json({ error: 'Failed to fetch Archidekt deck' });
+          }
+        }
+      }
+
+      if (!deckData) {
+        return res.status(400).json({ error: 'Unsupported deck URL or invalid format' });
+      }
+
+      res.json(deckData);
+    } catch (error) {
+      console.error('Deck import error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
   // Deck routes
   api.get("/decks", async (req, res) => {
     const decks = await storage.getAllDecks();
