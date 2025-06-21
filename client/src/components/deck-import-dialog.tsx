@@ -31,9 +31,10 @@ export function DeckImportDialog({
   const [deckName, setDeckName] = useState("");
   const [cardList, setCardList] = useState("");
   const [deckUrl, setDeckUrl] = useState("");
-  const [importMode, setImportMode] = useState<"text" | "url">("text");
+  const [importMode, setImportMode] = useState<"text" | "url" | "file">("text");
   const [isImporting, setIsImporting] = useState(false);
   const [importErrors, setImportErrors] = useState<string[]>([]);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const { toast } = useToast();
 
   const parseCardList = (text: string): Array<{ quantity: number; name: string }> => {
@@ -86,6 +87,11 @@ export function DeckImportDialog({
   const fetchDeckFromUrl = async (url: string): Promise<{ name: string; cardList: string }> => {
     const cleanUrl = url.trim();
     
+    // Only support Moxfield URLs
+    if (!cleanUrl.includes('moxfield.com')) {
+      throw new Error('Only Moxfield URLs are supported. For other sites, use the File Upload or Text Import tabs.');
+    }
+    
     try {
       // Use our server-side endpoint to bypass CORS
       const response = await fetch('/api/import/deck', {
@@ -104,21 +110,30 @@ export function DeckImportDialog({
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('Deck import error:', error);
-      
-      // Provide specific error messages based on the URL
-      if (cleanUrl.includes('moxfield.com')) {
-        throw new Error('Failed to fetch Moxfield deck. Please copy the deck list manually from the "Export" section.');
-      } else if (cleanUrl.includes('mtggoldfish.com')) {
-        throw new Error('Failed to fetch MTGGoldfish deck. Please use the "Export" → "Text" option and paste manually.');
-      } else if (cleanUrl.includes('archidekt.com')) {
-        throw new Error('Failed to fetch Archidekt deck. Please copy the deck list manually from the deck page.');
-      } else if (cleanUrl.includes('tappedout.net')) {
-        throw new Error('For TappedOut decks, please copy the deck list using the "Text" export option and paste it in the Text Import tab');
-      } else {
-        throw new Error('Unsupported deck URL. Supported sites: Moxfield, Archidekt, MTGGoldfish. For others, use the Text Import tab.');
-      }
+      console.error('Moxfield import error:', error);
+      throw new Error('Failed to fetch Moxfield deck. Please copy the deck list manually from the "Export" section.');
     }
+  };
+
+  const handleFileUpload = async (file: File): Promise<{ name: string; cardList: string }> => {
+    const fileName = file.name.replace(/\.(txt|pdf)$/i, '');
+    
+    if (file.type === 'application/pdf') {
+      // For PDF files, we'll need to extract text content
+      // For now, show error message asking for text files
+      throw new Error('PDF import is not yet supported. Please export your deck list as a .txt file and try again.');
+    }
+    
+    // Handle text files
+    if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
+      const text = await file.text();
+      return {
+        name: fileName,
+        cardList: text
+      };
+    }
+    
+    throw new Error('Unsupported file type. Please upload a .txt file with your deck list.');
   };
 
   const transformScryfallCard = (card: ScryfallCard): DeckCard => {
@@ -151,7 +166,7 @@ export function DeckImportDialog({
         if (!deckUrl.trim()) {
           toast({
             title: "Error",
-            description: "Please enter a deck URL",
+            description: "Please enter a Moxfield deck URL",
             variant: "destructive",
           });
           setIsImporting(false);
@@ -167,6 +182,34 @@ export function DeckImportDialog({
           toast({
             title: "Import Failed",
             description: error instanceof Error ? error.message : "Failed to import from URL",
+            variant: "destructive",
+          });
+          setIsImporting(false);
+          return;
+        }
+      }
+
+      // Handle file import
+      if (importMode === "file") {
+        if (!selectedFile) {
+          toast({
+            title: "Error",
+            description: "Please select a file to upload",
+            variant: "destructive",
+          });
+          setIsImporting(false);
+          return;
+        }
+
+        try {
+          const { name, cardList: fetchedCardList } = await handleFileUpload(selectedFile);
+          finalDeckName = finalDeckName || name;
+          finalCardList = fetchedCardList;
+        } catch (error) {
+          console.error('File import failed:', error);
+          toast({
+            title: "Import Failed",
+            description: error instanceof Error ? error.message : "Failed to import from file",
             variant: "destructive",
           });
           setIsImporting(false);
@@ -247,6 +290,7 @@ export function DeckImportDialog({
           setDeckName("");
           setCardList("");
           setDeckUrl("");
+          setSelectedFile(null);
           setImportErrors([]);
           onOpenChange(false);
         } catch (error) {
@@ -280,6 +324,7 @@ export function DeckImportDialog({
       setDeckName("");
       setCardList("");
       setDeckUrl("");
+      setSelectedFile(null);
       setImportErrors([]);
       onOpenChange(false);
     }
@@ -291,7 +336,7 @@ export function DeckImportDialog({
         <DialogHeader>
           <DialogTitle>Import Deck</DialogTitle>
           <DialogDescription>
-            Import a deck from a URL (Moxfield, Archidekt, MTGGoldfish) or paste a card list directly.
+            Import a deck from Moxfield URL, upload a .txt file, or paste a card list directly.
           </DialogDescription>
         </DialogHeader>
 
@@ -307,11 +352,15 @@ export function DeckImportDialog({
             />
           </div>
 
-          <Tabs value={importMode} onValueChange={(value) => setImportMode(value as "text" | "url")}>
-            <TabsList className="grid w-full grid-cols-2">
+          <Tabs value={importMode} onValueChange={(value) => setImportMode(value as "text" | "url" | "file")}>
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="url" className="flex items-center gap-2">
                 <Link className="h-4 w-4" />
-                URL Import
+                Moxfield
+              </TabsTrigger>
+              <TabsTrigger value="file" className="flex items-center gap-2">
+                <Upload className="h-4 w-4" />
+                File Upload
               </TabsTrigger>
               <TabsTrigger value="text" className="flex items-center gap-2">
                 <FileText className="h-4 w-4" />
@@ -321,16 +370,40 @@ export function DeckImportDialog({
 
             <TabsContent value="url" className="space-y-4">
               <div className="grid gap-2">
-                <Label htmlFor="deck-url">Deck URL</Label>
+                <Label htmlFor="deck-url">Moxfield Deck URL</Label>
                 <Input
                   id="deck-url"
                   value={deckUrl}
                   onChange={(e) => setDeckUrl(e.target.value)}
-                  placeholder="https://moxfield.com/decks/... or https://mtggoldfish.com/deck/..."
+                  placeholder="https://moxfield.com/decks/..."
                   disabled={isImporting}
                 />
                 <p className="text-sm text-muted-foreground">
-                  Supported: Moxfield, Archidekt, MTGGoldfish. For TappedOut, use "Text" export and paste in Text Import tab.
+                  Enter a Moxfield deck URL to automatically import the deck list and name.
+                </p>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="file" className="space-y-4">
+              <div className="grid gap-2">
+                <Label htmlFor="deck-file">Upload Deck File</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="deck-file"
+                    type="file"
+                    accept=".txt,.pdf"
+                    onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                    disabled={isImporting}
+                    className="file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-sm file:bg-muted file:text-muted-foreground"
+                  />
+                </div>
+                {selectedFile && (
+                  <p className="text-sm text-muted-foreground">
+                    Selected: {selectedFile.name}
+                  </p>
+                )}
+                <p className="text-sm text-muted-foreground">
+                  Upload a .txt file containing your deck list. PDF support coming soon.
                 </p>
               </div>
             </TabsContent>
