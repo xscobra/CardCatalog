@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 import { Download, ArrowLeft, Trash2, Upload } from "lucide-react";
-import { ThemeToggle } from "@/components/theme-toggle";
+
 import type { Deck, DeckCard } from "@shared/schema";
 import type { ScryfallCard } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
@@ -312,7 +312,6 @@ export default function DeckPage() {
               />
             </div>
             <div className="flex items-center gap-2">
-              <ThemeToggle />
               {id !== "new" && (
                 <Button
                   variant="destructive"
