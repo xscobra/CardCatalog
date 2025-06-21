@@ -79,28 +79,57 @@ export function DeckImportDialog({
   const fetchDeckFromUrl = async (url: string): Promise<{ name: string; cardList: string }> => {
     const cleanUrl = url.trim();
     
+    // Use a CORS proxy for external API calls to avoid CORS issues
+    const corsProxy = 'https://api.allorigins.win/raw?url=';
+    
     // Moxfield API
     if (cleanUrl.includes('moxfield.com')) {
       const deckIdMatch = cleanUrl.match(/moxfield\.com\/decks\/([a-zA-Z0-9_-]+)/);
       if (deckIdMatch) {
         const deckId = deckIdMatch[1];
-        const response = await fetch(`https://api2.moxfield.com/v3/decks/all/${deckId}`);
-        if (!response.ok) throw new Error('Failed to fetch Moxfield deck');
+        const apiUrl = `https://api2.moxfield.com/v3/decks/all/${deckId}`;
         
-        const data = await response.json();
-        const cardList = Object.entries(data.mainboard || {})
-          .map(([cardId, cardInfo]: [string, any]) => `${cardInfo.quantity} ${cardInfo.card.name}`)
-          .join('\n');
-        
-        return { name: data.name || 'Imported Deck', cardList };
+        try {
+          let response = await fetch(apiUrl);
+          if (!response.ok) {
+            // Try with CORS proxy if direct call fails
+            response = await fetch(corsProxy + encodeURIComponent(apiUrl));
+          }
+          if (!response.ok) throw new Error('Failed to fetch Moxfield deck');
+          
+          const data = await response.json();
+          const cardList = Object.entries(data.mainboard || {})
+            .map(([cardId, cardInfo]: [string, any]) => `${cardInfo.quantity} ${cardInfo.card.name}`)
+            .join('\n');
+          
+          return { name: data.name || 'Imported Deck', cardList };
+        } catch (error) {
+          throw new Error('Failed to fetch Moxfield deck. Please try copying the deck list manually.');
+        }
       }
     }
     
-    // TappedOut parsing (screen scraping fallback)
-    if (cleanUrl.includes('tappedout.net')) {
-      // For TappedOut, we'll need to parse the export format
-      // Users should use the "Text" export option from TappedOut
-      throw new Error('For TappedOut decks, please copy the deck list using the "Text" export option and paste it in the text tab');
+    // MTGGoldfish API
+    if (cleanUrl.includes('mtggoldfish.com')) {
+      const deckIdMatch = cleanUrl.match(/mtggoldfish\.com\/deck\/(\d+)/);
+      if (deckIdMatch) {
+        const deckId = deckIdMatch[1];
+        const exportUrl = `https://www.mtggoldfish.com/deck/download/${deckId}`;
+        
+        try {
+          const response = await fetch(corsProxy + encodeURIComponent(exportUrl));
+          if (!response.ok) throw new Error('Failed to fetch MTGGoldfish deck');
+          
+          const textData = await response.text();
+          // MTGGoldfish export format is plain text with quantities
+          const lines = textData.split('\n').filter(line => line.trim());
+          const deckName = lines[0]?.includes('//') ? lines[0].replace('//', '').trim() : 'MTGGoldfish Deck';
+          
+          return { name: deckName, cardList: textData };
+        } catch (error) {
+          throw new Error('Failed to fetch MTGGoldfish deck. Please use the "Export" → "Text" option and paste manually.');
+        }
+      }
     }
     
     // Archidekt API
@@ -108,20 +137,35 @@ export function DeckImportDialog({
       const deckIdMatch = cleanUrl.match(/archidekt\.com\/decks\/(\d+)/);
       if (deckIdMatch) {
         const deckId = deckIdMatch[1];
-        const response = await fetch(`https://archidekt.com/api/decks/${deckId}/`);
-        if (!response.ok) throw new Error('Failed to fetch Archidekt deck');
+        const apiUrl = `https://archidekt.com/api/decks/${deckId}/`;
         
-        const data = await response.json();
-        const cardList = data.cards
-          .filter((card: any) => card.categories[0] === 'Maindeck')
-          .map((card: any) => `${card.quantity} ${card.card.oracleCard.name}`)
-          .join('\n');
-        
-        return { name: data.name || 'Imported Deck', cardList };
+        try {
+          let response = await fetch(apiUrl);
+          if (!response.ok) {
+            // Try with CORS proxy if direct call fails
+            response = await fetch(corsProxy + encodeURIComponent(apiUrl));
+          }
+          if (!response.ok) throw new Error('Failed to fetch Archidekt deck');
+          
+          const data = await response.json();
+          const cardList = data.cards
+            .filter((card: any) => card.categories[0] === 'Maindeck')
+            .map((card: any) => `${card.quantity} ${card.card.oracleCard.name}`)
+            .join('\n');
+          
+          return { name: data.name || 'Imported Deck', cardList };
+        } catch (error) {
+          throw new Error('Failed to fetch Archidekt deck. Please try copying the deck list manually.');
+        }
       }
     }
     
-    throw new Error('Unsupported deck URL. Please use Moxfield or Archidekt URLs, or paste the deck list directly.');
+    // TappedOut parsing (screen scraping fallback)
+    if (cleanUrl.includes('tappedout.net')) {
+      throw new Error('For TappedOut decks, please copy the deck list using the "Text" export option and paste it in the Text Import tab');
+    }
+    
+    throw new Error('Unsupported deck URL. Supported sites: Moxfield, Archidekt, MTGGoldfish. For others, use the Text Import tab.');
   };
 
   const transformScryfallCard = (card: ScryfallCard): DeckCard => {
@@ -276,7 +320,7 @@ export function DeckImportDialog({
         <DialogHeader>
           <DialogTitle>Import Deck</DialogTitle>
           <DialogDescription>
-            Import a deck from a URL (Moxfield, Archidekt) or paste a card list directly.
+            Import a deck from a URL (Moxfield, Archidekt, MTGGoldfish) or paste a card list directly.
           </DialogDescription>
         </DialogHeader>
 
@@ -311,11 +355,11 @@ export function DeckImportDialog({
                   id="deck-url"
                   value={deckUrl}
                   onChange={(e) => setDeckUrl(e.target.value)}
-                  placeholder="https://moxfield.com/decks/... or https://archidekt.com/decks/..."
+                  placeholder="https://moxfield.com/decks/... or https://mtggoldfish.com/deck/..."
                   disabled={isImporting}
                 />
                 <p className="text-sm text-muted-foreground">
-                  Supported: Moxfield, Archidekt. For TappedOut, use "Text" export and paste in Text Import tab.
+                  Supported: Moxfield, Archidekt, MTGGoldfish. For TappedOut, use "Text" export and paste in Text Import tab.
                 </p>
               </div>
             </TabsContent>
