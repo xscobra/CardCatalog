@@ -105,7 +105,7 @@ export function CardRow({
                 <img
                   src={card.imageUrl}
                   alt={card.name}
-                  className="w-16 h-16 object-cover rounded cursor-pointer shrink-0 touch-manipulation"
+                  className="w-12 h-16 object-cover rounded cursor-pointer shrink-0 touch-manipulation"
                   onClick={(e) => {
                     e.stopPropagation();
                     setShowImage(true);
@@ -275,7 +275,7 @@ export function CardRow({
             <img
               src={card.imageUrl}
               alt={card.name}
-              className="max-w-full rounded-lg shadow-lg"
+              className="max-w-full max-h-96 object-contain rounded-lg shadow-lg"
             />
           </div>
         </DialogContent>

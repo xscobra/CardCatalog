@@ -53,7 +53,7 @@ export function PrintingsDialog({
                       <img
                         src={print.image_uris.normal}
                         alt={`${print.name} (${print.set_name})`}
-                        className="w-full rounded-lg shadow-lg hover:scale-105 transition-transform"
+                        className="w-full h-48 object-cover rounded-lg shadow-lg hover:scale-105 transition-transform"
                         onError={(e) => {
                           (e.target as HTMLImageElement).style.display = 'none';
                         }}
