@@ -123,6 +123,11 @@ This is a comprehensive Magic: The Gathering deck building application built wit
 - June 21, 2025: Updated price totals to reflect only pulled cards value and removed format dropdown
 - June 21, 2025: Simplified UI to utilitarian design with clean, functional interface and dark/light mode toggle
 - June 21, 2025: Added ability to move pulled cards back to deck with right swipe gesture or button
+- June 21, 2025: Removed dark mode toggle - application now uses light mode only
+- June 21, 2025: Fixed card image sizing to ensure all images fit properly within containers
+- June 21, 2025: Disabled drag/swipe card removal - cards now only removed via explicit button clicks
+- June 21, 2025: Fixed "Move to Deck" functionality that was incorrectly deleting cards
+- June 21, 2025: Enhanced card search accuracy with exact name matching and improved result sorting
 
 ## User Preferences
 

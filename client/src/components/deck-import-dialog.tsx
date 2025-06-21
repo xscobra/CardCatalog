@@ -251,15 +251,26 @@ export function DeckImportDialog({
 
       for (const [name, totalQuantity] of cardGroups) {
         try {
-          // Search for the card
-          const searchResults = await searchCards(name);
+          // Clean the card name for better search accuracy
+          const cleanName = name.trim()
+            .replace(/\s+/g, ' ') // Normalize whitespace
+            .replace(/[""]/g, '"') // Normalize quotes
+            .toLowerCase();
+          
+          // Search for the card with improved accuracy
+          const searchResults = await searchCards(cleanName);
           
           if (searchResults.length === 0) {
-            errors.push(`Card not found: ${name}`);
-            continue;
+            // Try alternative search without normalization
+            const alternativeResults = await searchCards(name.trim());
+            if (alternativeResults.length === 0) {
+              errors.push(`Card not found: ${name}`);
+              continue;
+            }
+            searchResults.push(...alternativeResults);
           }
 
-          // Use the first result (best match)
+          // Use the first result (best match due to improved sorting)
           const card = searchResults[0];
           const deckCard = transformScryfallCard(card);
 
