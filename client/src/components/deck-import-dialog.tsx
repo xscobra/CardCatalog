@@ -86,122 +86,39 @@ export function DeckImportDialog({
   const fetchDeckFromUrl = async (url: string): Promise<{ name: string; cardList: string }> => {
     const cleanUrl = url.trim();
     
-    // First try without CORS proxy for APIs that support it
-    // Moxfield API
-    if (cleanUrl.includes('moxfield.com')) {
-      const deckIdMatch = cleanUrl.match(/moxfield\.com\/decks\/([a-zA-Z0-9_-]+)/);
-      if (deckIdMatch) {
-        const deckId = deckIdMatch[1];
-        
-        try {
-          // Try the public API endpoint first
-          const response = await fetch(`https://api2.moxfield.com/v2/decks/all/${deckId}`, {
-            mode: 'cors',
-            headers: {
-              'Accept': 'application/json',
-            }
-          });
-          
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-          }
-          
-          const data = await response.json();
-          
-          // Handle both v2 and v3 API formats
-          const mainboard = data.mainboard || data.boards?.mainboard || {};
-          const cardList = Object.entries(mainboard)
-            .map(([cardId, cardInfo]: [string, any]) => {
-              const quantity = cardInfo.quantity || cardInfo.count || 1;
-              const name = cardInfo.card?.name || cardInfo.name || 'Unknown Card';
-              return `${quantity} ${name}`;
-            })
-            .join('\n');
-          
-          return { 
-            name: data.name || data.title || 'Moxfield Deck', 
-            cardList 
-          };
-        } catch (error) {
-          console.error('Moxfield import error:', error);
-          throw new Error('Failed to fetch Moxfield deck. Please copy the deck list manually from the "Export" section.');
-        }
+    try {
+      // Use our server-side endpoint to bypass CORS
+      const response = await fetch('/api/import/deck', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url: cleanUrl }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Deck import error:', error);
+      
+      // Provide specific error messages based on the URL
+      if (cleanUrl.includes('moxfield.com')) {
+        throw new Error('Failed to fetch Moxfield deck. Please copy the deck list manually from the "Export" section.');
+      } else if (cleanUrl.includes('mtggoldfish.com')) {
+        throw new Error('Failed to fetch MTGGoldfish deck. Please use the "Export" → "Text" option and paste manually.');
+      } else if (cleanUrl.includes('archidekt.com')) {
+        throw new Error('Failed to fetch Archidekt deck. Please copy the deck list manually from the deck page.');
+      } else if (cleanUrl.includes('tappedout.net')) {
+        throw new Error('For TappedOut decks, please copy the deck list using the "Text" export option and paste it in the Text Import tab');
+      } else {
+        throw new Error('Unsupported deck URL. Supported sites: Moxfield, Archidekt, MTGGoldfish. For others, use the Text Import tab.');
       }
     }
-    
-    // MTGGoldfish - try direct download
-    if (cleanUrl.includes('mtggoldfish.com')) {
-      const deckIdMatch = cleanUrl.match(/mtggoldfish\.com\/deck\/(\d+)/);
-      if (deckIdMatch) {
-        const deckId = deckIdMatch[1];
-        
-        try {
-          // Try the export URL directly
-          const response = await fetch(`https://www.mtggoldfish.com/deck/download/${deckId}`, {
-            mode: 'cors',
-          });
-          
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-          }
-          
-          const textData = await response.text();
-          const lines = textData.split('\n').filter(line => line.trim());
-          const deckName = lines.find(line => line.includes('//'))?.replace('//', '').trim() || 'MTGGoldfish Deck';
-          
-          return { name: deckName, cardList: textData };
-        } catch (error) {
-          console.error('MTGGoldfish import error:', error);
-          throw new Error('Failed to fetch MTGGoldfish deck. Please use the "Export" → "Text" option and paste manually.');
-        }
-      }
-    }
-    
-    // Archidekt API
-    if (cleanUrl.includes('archidekt.com')) {
-      const deckIdMatch = cleanUrl.match(/archidekt\.com\/decks\/(\d+)/);
-      if (deckIdMatch) {
-        const deckId = deckIdMatch[1];
-        
-        try {
-          const response = await fetch(`https://archidekt.com/api/decks/${deckId}/`, {
-            mode: 'cors',
-            headers: {
-              'Accept': 'application/json',
-            }
-          });
-          
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-          }
-          
-          const data = await response.json();
-          const cardList = (data.cards || [])
-            .filter((card: any) => !card.categories || card.categories.includes('Maindeck') || card.categories[0] === 'Maindeck')
-            .map((card: any) => {
-              const quantity = card.quantity || 1;
-              const name = card.card?.oracleCard?.name || card.card?.name || 'Unknown Card';
-              return `${quantity} ${name}`;
-            })
-            .join('\n');
-          
-          return { 
-            name: data.name || 'Archidekt Deck', 
-            cardList 
-          };
-        } catch (error) {
-          console.error('Archidekt import error:', error);
-          throw new Error('Failed to fetch Archidekt deck. Please copy the deck list manually from the deck page.');
-        }
-      }
-    }
-    
-    // TappedOut
-    if (cleanUrl.includes('tappedout.net')) {
-      throw new Error('For TappedOut decks, please copy the deck list using the "Text" export option and paste it in the Text Import tab');
-    }
-    
-    throw new Error('Unsupported deck URL. Supported sites: Moxfield, Archidekt, MTGGoldfish. For others, use the Text Import tab.');
   };
 
   const transformScryfallCard = (card: ScryfallCard): DeckCard => {
