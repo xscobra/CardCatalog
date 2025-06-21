@@ -1,8 +1,8 @@
 import { DeckCard } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { motion, PanInfo } from "framer-motion";
-import { useState, useRef, useEffect } from "react";
+import { motion } from "framer-motion";
+import { useState } from "react";
 import { PrintingsDialog } from "./printings-dialog";
 import { SetSymbolsDialog } from "./set-symbols-dialog";
 import { PriceHistoryDialog } from "./price-history-dialog";
@@ -25,7 +25,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
 
 interface CardRowProps {
   card: DeckCard;
@@ -36,7 +35,6 @@ interface CardRowProps {
   format?: string;
   onPriceUpdate?: (cardId: string, newPrices: { tcgplayer: number | null; cardkingdom: number | null }) => void;
   isPulled?: boolean;
-  onPermanentRemove?: () => void;
 }
 
 export function CardRow({ 
@@ -47,20 +45,14 @@ export function CardRow({
   onPull,
   format,
   onPriceUpdate,
-  isPulled = false,
-  onPermanentRemove
+  isPulled = false
 }: CardRowProps) {
   const [showPrintings, setShowPrintings] = useState(false);
   const [showImage, setShowImage] = useState(false);
   const [showSets, setShowSets] = useState(false);
   const [showPriceHistory, setShowPriceHistory] = useState(false);
   const [showPriceAlert, setShowPriceAlert] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
   const [selectedPrices, setSelectedPrices] = useState(card.prices);
-  const [swipeOffset, setSwipeOffset] = useState(0);
-  const cardRef = useRef<HTMLDivElement>(null);
-  const startX = useRef(0);
-  const currentX = useRef(0);
 
   const { data: metadata } = useQuery({
     queryKey: ["/api/cards/metadata", card.id],
@@ -78,47 +70,6 @@ export function CardRow({
     }
   };
 
-  const handleDragEnd = (_: any, info: PanInfo) => {
-    // Disable drag to remove - only use buttons for actions
-    setIsDragging(false);
-  };
-
-  // Disabled swipe functionality - cards only removed via buttons
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    startX.current = e.clientX;
-    setIsDragging(true);
-    e.preventDefault();
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
-
-    currentX.current = e.clientX;
-    const deltaX = currentX.current - startX.current;
-
-    // Only allow left swipes
-    if (deltaX < 0) {
-      setSwipeOffset(Math.max(deltaX, -100));
-    }
-  };
-
-  const handleMouseUp = () => {
-    if (!isDragging) return;
-
-    const deltaX = currentX.current - startX.current;
-
-    // Trigger action on significant left swipe
-    if (deltaX < -50 && onPull) {
-      onPull();
-    }
-
-    setSwipeOffset(0);
-    setIsDragging(false);
-  };
-
-  // Disabled mouse drag functionality
-
   return (
     <motion.div
       layout
@@ -130,29 +81,12 @@ export function CardRow({
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             {/* Card Info Section */}
-             <div
-              ref={cardRef}
-              className={cn(
-                "flex items-center gap-3 p-3 border-b hover:bg-muted/50 last:border-b-0 transition-transform",
-                isDragging && "select-none"
-              )}
-              style={{ 
-                transform: `translateX(${swipeOffset}px)`,
-                backgroundColor: swipeOffset < -25 ? (isPulled ? '#dcfce7' : '#e0f2fe') : undefined
-              }}
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-            >
             <div className="flex items-center gap-4 min-w-0" onClick={onCardClick}>
               {card.imageUrl && (
                 <img
                   src={card.imageUrl}
                   alt={card.name}
-                  className="w-12 h-16 object-cover rounded cursor-pointer shrink-0 touch-manipulation"
+                  className="w-12 h-16 object-cover rounded cursor-pointer shrink-0"
                   onClick={(e) => {
                     e.stopPropagation();
                     setShowImage(true);
@@ -187,7 +121,6 @@ export function CardRow({
                 </div>
               </div>
             </div>
-            </div>
 
             {/* Actions Section */}
             <div className="flex items-center justify-between sm:justify-end gap-4">
@@ -212,7 +145,12 @@ export function CardRow({
                     <DropdownMenuItem onClick={() => setShowPriceAlert(true)} className="py-3">
                       <Bell className="mr-2 h-5 w-5" /> Set Price Alert
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={onPermanentRemove || onRemove} className="text-destructive py-3">
+                    {onPull && (
+                      <DropdownMenuItem onClick={onPull} className="py-3">
+                        {isPulled ? "Move to Deck" : "Move to Pulled"}
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem onClick={onRemove} className="text-destructive py-3">
                       Remove
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -279,7 +217,13 @@ export function CardRow({
                   </Tooltip>
                 </div>
 
-                <Button variant="destructive" size="lg" onClick={onPermanentRemove || onRemove} className="px-6">
+                {onPull && (
+                  <Button variant="outline" size="lg" onClick={onPull} className="px-6">
+                    {isPulled ? "Move to Deck" : "Move to Pulled"}
+                  </Button>
+                )}
+
+                <Button variant="destructive" size="lg" onClick={onRemove} className="px-6">
                   Remove
                 </Button>
               </div>
