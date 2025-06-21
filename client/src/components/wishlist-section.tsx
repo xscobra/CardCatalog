@@ -246,7 +246,7 @@ export function CardSearchSection() {
               <img
                 src={selectedCard.imageUrl}
                 alt={selectedCard.name}
-                className="w-full h-auto rounded-lg"
+                className="max-w-full max-h-96 object-contain rounded-lg mx-auto"
               />
             )}
           </DialogContent>

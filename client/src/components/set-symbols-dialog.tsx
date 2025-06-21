@@ -74,8 +74,7 @@ export function SetSymbolsDialog({
               <img
                 src={getCardImageUrl(selectedCard)}
                 alt={selectedCard.name}
-                className="max-w-full h-auto rounded-lg shadow-lg"
-                style={{ maxHeight: '400px' }}
+                className="max-w-full max-h-96 object-contain rounded-lg shadow-lg"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = '/placeholder-card.png';
                 }}
