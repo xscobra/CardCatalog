@@ -79,45 +79,11 @@ export function CardRow({
   };
 
   const handleDragEnd = (_: any, info: PanInfo) => {
-    const threshold = 100;
-
-    if (info.offset.x < -threshold && onPull) {
-      // Left swipe - move to pulled cards (deck) or back to deck (pulled)
-      onPull();
-    }
+    // Disable drag to remove - only use buttons for actions
     setIsDragging(false);
   };
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    startX.current = e.touches[0].clientX;
-    setIsDragging(true);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging) return;
-
-    currentX.current = e.touches[0].clientX;
-    const deltaX = currentX.current - startX.current;
-
-    // Only allow left swipes
-    if (deltaX < 0) {
-      setSwipeOffset(Math.max(deltaX, -100));
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (!isDragging) return;
-
-    const deltaX = currentX.current - startX.current;
-
-    // Trigger action on significant left swipe
-    if (deltaX < -50 && onPull) {
-      onPull();
-    }
-
-    setSwipeOffset(0);
-    setIsDragging(false);
-  };
+  // Disabled swipe functionality - cards only removed via buttons
 
   const handleMouseDown = (e: React.MouseEvent) => {
     startX.current = e.clientX;
@@ -151,54 +117,14 @@ export function CardRow({
     setIsDragging(false);
   };
 
-  useEffect(() => {
-    const handleGlobalMouseMove = (e: MouseEvent) => {
-      if (isDragging) {
-        currentX.current = e.clientX;
-        const deltaX = currentX.current - startX.current;
-
-        if (deltaX < 0) {
-          setSwipeOffset(Math.max(deltaX, -100));
-        }
-      }
-    };
-
-    const handleGlobalMouseUp = () => {
-      if (isDragging) {
-        const deltaX = currentX.current - startX.current;
-
-        if (deltaX < -50 && onPull) {
-          onPull();
-        }
-
-        setSwipeOffset(0);
-        setIsDragging(false);
-      }
-    };
-
-    if (isDragging) {
-      document.addEventListener('mousemove', handleGlobalMouseMove);
-      document.addEventListener('mouseup', handleGlobalMouseUp);
-    }
-
-    return () => {
-      document.removeEventListener('mousemove', handleGlobalMouseMove);
-      document.removeEventListener('mouseup', handleGlobalMouseUp);
-    };
-  }, [isDragging, isPulled, onRemove, onPull]);
+  // Disabled mouse drag functionality
 
   return (
     <motion.div
       layout
-      drag="x"
-      dragConstraints={{ left: 0, right: 0 }}
-      dragElastic={0.7}
-      onDragStart={() => setIsDragging(true)}
-      onDragEnd={handleDragEnd}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      whileTap={{ scale: 0.98 }}
     >
       <Card className="mb-4 hover:shadow-sm transition-shadow">
         <CardContent className="p-4">
@@ -221,7 +147,7 @@ export function CardRow({
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
             >
-            <div className="flex items-center gap-4 min-w-0" onClick={() => !isDragging && onCardClick()}>
+            <div className="flex items-center gap-4 min-w-0" onClick={onCardClick}>
               {card.imageUrl && (
                 <img
                   src={card.imageUrl}
