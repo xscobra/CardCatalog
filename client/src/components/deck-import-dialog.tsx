@@ -51,22 +51,29 @@ export function DeckImportDialog({
           trimmedLine.toLowerCase().includes('commander') ||
           trimmedLine.toLowerCase().includes('companion')) continue;
 
-      // Clean up common deck list formatting
-      trimmedLine = trimmedLine.replace(/^\d+\s+/, ''); // Remove leading numbers from some formats
-      
-      // Match patterns like "4 Lightning Bolt" or "1x Counterspell" or just "Lightning Bolt"
-      // Also handle formats like "4x Lightning Bolt (M10)" removing set info in parentheses
-      const quantityMatch = trimmedLine.match(/^(\d+)x?\s+([^(]+?)(?:\s*\([^)]*\))?\s*$/);
+      // Match various formats: "4 Lightning Bolt", "1x Counterspell", "Lightning Bolt (M10)", etc.
+      const quantityMatch = trimmedLine.match(/^(\d+)x?\s+(.+?)(?:\s*\([^)]*\))?\s*$/);
       
       if (quantityMatch) {
         const quantity = parseInt(quantityMatch[1]);
-        const name = quantityMatch[2].trim();
+        let name = quantityMatch[2].trim();
+        
+        // Clean up card name - remove trailing set info, collector numbers, etc.
+        name = name.replace(/\s*\([^)]*\)\s*$/, ''); // Remove (SET)
+        name = name.replace(/\s*\d+\/\d+\s*$/, ''); // Remove collector numbers like 123/249
+        name = name.replace(/\s*#\d+\s*$/, ''); // Remove #123 format
+        name = name.trim();
+        
         if (name) {
           parsedCards.push({ quantity, name });
         }
       } else {
-        // Try to extract just the card name, removing set codes and other info
-        const nameOnly = trimmedLine.replace(/\s*\([^)]*\)\s*$/, '').trim();
+        // No quantity specified, try to extract card name
+        let nameOnly = trimmedLine.replace(/\s*\([^)]*\)\s*$/, '').trim();
+        nameOnly = nameOnly.replace(/\s*\d+\/\d+\s*$/, '');
+        nameOnly = nameOnly.replace(/\s*#\d+\s*$/, '');
+        nameOnly = nameOnly.trim();
+        
         if (nameOnly) {
           parsedCards.push({ quantity: 1, name: nameOnly });
         }
@@ -79,54 +86,72 @@ export function DeckImportDialog({
   const fetchDeckFromUrl = async (url: string): Promise<{ name: string; cardList: string }> => {
     const cleanUrl = url.trim();
     
-    // Use a CORS proxy for external API calls to avoid CORS issues
-    const corsProxy = 'https://api.allorigins.win/raw?url=';
-    
+    // First try without CORS proxy for APIs that support it
     // Moxfield API
     if (cleanUrl.includes('moxfield.com')) {
       const deckIdMatch = cleanUrl.match(/moxfield\.com\/decks\/([a-zA-Z0-9_-]+)/);
       if (deckIdMatch) {
         const deckId = deckIdMatch[1];
-        const apiUrl = `https://api2.moxfield.com/v3/decks/all/${deckId}`;
         
         try {
-          let response = await fetch(apiUrl);
+          // Try the public API endpoint first
+          const response = await fetch(`https://api2.moxfield.com/v2/decks/all/${deckId}`, {
+            mode: 'cors',
+            headers: {
+              'Accept': 'application/json',
+            }
+          });
+          
           if (!response.ok) {
-            // Try with CORS proxy if direct call fails
-            response = await fetch(corsProxy + encodeURIComponent(apiUrl));
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
           }
-          if (!response.ok) throw new Error('Failed to fetch Moxfield deck');
           
           const data = await response.json();
-          const cardList = Object.entries(data.mainboard || {})
-            .map(([cardId, cardInfo]: [string, any]) => `${cardInfo.quantity} ${cardInfo.card.name}`)
+          
+          // Handle both v2 and v3 API formats
+          const mainboard = data.mainboard || data.boards?.mainboard || {};
+          const cardList = Object.entries(mainboard)
+            .map(([cardId, cardInfo]: [string, any]) => {
+              const quantity = cardInfo.quantity || cardInfo.count || 1;
+              const name = cardInfo.card?.name || cardInfo.name || 'Unknown Card';
+              return `${quantity} ${name}`;
+            })
             .join('\n');
           
-          return { name: data.name || 'Imported Deck', cardList };
+          return { 
+            name: data.name || data.title || 'Moxfield Deck', 
+            cardList 
+          };
         } catch (error) {
-          throw new Error('Failed to fetch Moxfield deck. Please try copying the deck list manually.');
+          console.error('Moxfield import error:', error);
+          throw new Error('Failed to fetch Moxfield deck. Please copy the deck list manually from the "Export" section.');
         }
       }
     }
     
-    // MTGGoldfish API
+    // MTGGoldfish - try direct download
     if (cleanUrl.includes('mtggoldfish.com')) {
       const deckIdMatch = cleanUrl.match(/mtggoldfish\.com\/deck\/(\d+)/);
       if (deckIdMatch) {
         const deckId = deckIdMatch[1];
-        const exportUrl = `https://www.mtggoldfish.com/deck/download/${deckId}`;
         
         try {
-          const response = await fetch(corsProxy + encodeURIComponent(exportUrl));
-          if (!response.ok) throw new Error('Failed to fetch MTGGoldfish deck');
+          // Try the export URL directly
+          const response = await fetch(`https://www.mtggoldfish.com/deck/download/${deckId}`, {
+            mode: 'cors',
+          });
+          
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
           
           const textData = await response.text();
-          // MTGGoldfish export format is plain text with quantities
           const lines = textData.split('\n').filter(line => line.trim());
-          const deckName = lines[0]?.includes('//') ? lines[0].replace('//', '').trim() : 'MTGGoldfish Deck';
+          const deckName = lines.find(line => line.includes('//'))?.replace('//', '').trim() || 'MTGGoldfish Deck';
           
           return { name: deckName, cardList: textData };
         } catch (error) {
+          console.error('MTGGoldfish import error:', error);
           throw new Error('Failed to fetch MTGGoldfish deck. Please use the "Export" → "Text" option and paste manually.');
         }
       }
@@ -137,30 +162,41 @@ export function DeckImportDialog({
       const deckIdMatch = cleanUrl.match(/archidekt\.com\/decks\/(\d+)/);
       if (deckIdMatch) {
         const deckId = deckIdMatch[1];
-        const apiUrl = `https://archidekt.com/api/decks/${deckId}/`;
         
         try {
-          let response = await fetch(apiUrl);
+          const response = await fetch(`https://archidekt.com/api/decks/${deckId}/`, {
+            mode: 'cors',
+            headers: {
+              'Accept': 'application/json',
+            }
+          });
+          
           if (!response.ok) {
-            // Try with CORS proxy if direct call fails
-            response = await fetch(corsProxy + encodeURIComponent(apiUrl));
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
           }
-          if (!response.ok) throw new Error('Failed to fetch Archidekt deck');
           
           const data = await response.json();
-          const cardList = data.cards
-            .filter((card: any) => card.categories[0] === 'Maindeck')
-            .map((card: any) => `${card.quantity} ${card.card.oracleCard.name}`)
+          const cardList = (data.cards || [])
+            .filter((card: any) => !card.categories || card.categories.includes('Maindeck') || card.categories[0] === 'Maindeck')
+            .map((card: any) => {
+              const quantity = card.quantity || 1;
+              const name = card.card?.oracleCard?.name || card.card?.name || 'Unknown Card';
+              return `${quantity} ${name}`;
+            })
             .join('\n');
           
-          return { name: data.name || 'Imported Deck', cardList };
+          return { 
+            name: data.name || 'Archidekt Deck', 
+            cardList 
+          };
         } catch (error) {
-          throw new Error('Failed to fetch Archidekt deck. Please try copying the deck list manually.');
+          console.error('Archidekt import error:', error);
+          throw new Error('Failed to fetch Archidekt deck. Please copy the deck list manually from the deck page.');
         }
       }
     }
     
-    // TappedOut parsing (screen scraping fallback)
+    // TappedOut
     if (cleanUrl.includes('tappedout.net')) {
       throw new Error('For TappedOut decks, please copy the deck list using the "Text" export option and paste it in the Text Import tab');
     }
@@ -235,7 +271,14 @@ export function DeckImportDialog({
       const importedCards: DeckCard[] = [];
       const errors: string[] = [];
 
+      // Group cards by name to handle duplicates properly
+      const cardGroups = new Map<string, number>();
       for (const { quantity, name } of parsedCards) {
+        const existing = cardGroups.get(name) || 0;
+        cardGroups.set(name, existing + quantity);
+      }
+
+      for (const [name, totalQuantity] of cardGroups) {
         try {
           // Search for the card
           const searchResults = await searchCards(name);
@@ -249,8 +292,8 @@ export function DeckImportDialog({
           const card = searchResults[0];
           const deckCard = transformScryfallCard(card);
 
-          // Add multiple copies based on quantity
-          for (let i = 0; i < quantity; i++) {
+          // Add all copies based on total quantity (including duplicates)
+          for (let i = 0; i < totalQuantity; i++) {
             importedCards.push({ 
               ...deckCard, 
               id: `${card.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${i}` 
