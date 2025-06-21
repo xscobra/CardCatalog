@@ -71,15 +71,14 @@ export function CardRow({
   };
 
   const handleDragEnd = (_: any, info: PanInfo) => {
-    const threshold = 150;
-    const pullThreshold = 300;
+    const threshold = 100;
     
-    if (Math.abs(info.offset.x) > pullThreshold && onPull) {
-      // Far swipe triggers pull
-      onPull();
-    } else if (Math.abs(info.offset.x) > threshold) {
-      // Regular swipe triggers remove
+    if (info.offset.x < -threshold) {
+      // Left swipe triggers remove
       onRemove();
+    } else if (info.offset.x > threshold && onPull) {
+      // Right swipe behavior depends on card state
+      onPull();
     }
     setIsDragging(false);
   };
