@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 import { Download, ArrowLeft, Trash2, Upload } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 import type { Deck, DeckCard } from "@shared/schema";
 import type { ScryfallCard } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
@@ -291,42 +292,55 @@ export default function DeckPage() {
   const { tcgplayer: totalTcg, cardkingdom: totalCk } = calculateTotalPrices();
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 min-h-screen">
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          <Button 
-            variant="ghost" 
-            onClick={() => setLocation("/")}
-            className="p-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div className="flex-1 w-full sm:w-auto">
-            <Input
-              placeholder="Deck Name"
-              value={name}
-              onChange={handleNameChange}
-              className="text-xl sm:text-2xl font-bold"
-            />
-          </div>
-          {id !== "new" && (
-            <Button
-              variant="destructive"
-              onClick={() => setShowDeleteDialog(true)}
-              className="p-2"
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <Button 
+              variant="ghost" 
+              onClick={() => setLocation("/")}
+              className="p-2 hover:bg-primary/10 hover:text-primary transition-colors"
             >
-              <Trash2 className="h-4 w-4" />
+              <ArrowLeft className="h-4 w-4" />
             </Button>
-          )}
-        </div>
+            <div className="flex-1 w-full sm:w-auto">
+              <Input
+                placeholder="Deck Name"
+                value={name}
+                onChange={handleNameChange}
+                className="text-xl sm:text-2xl font-bold border-0 bg-transparent focus:bg-card/50 transition-all shadow-none focus:shadow-md"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              {id !== "new" && (
+                <Button
+                  variant="destructive"
+                  onClick={() => setShowDeleteDialog(true)}
+                  className="p-2 hover:shadow-lg transition-shadow"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
 
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
           <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-            <Button onClick={handleExportClick} disabled={!deck} className="w-full sm:w-auto">
+            <Button 
+              onClick={handleExportClick} 
+              disabled={!deck} 
+              className="w-full sm:w-auto shadow-md hover:shadow-lg transition-shadow"
+              variant="outline"
+            >
               <Download className="mr-2 h-4 w-4" />
               Export
             </Button>
-            <Button onClick={() => setShowImportDialog(true)} className="w-full sm:w-auto">
+            <Button 
+              onClick={() => setShowImportDialog(true)} 
+              className="w-full sm:w-auto shadow-md hover:shadow-lg transition-shadow"
+              variant="outline"
+            >
               <Upload className="mr-2 h-4 w-4" />
               Import
             </Button>

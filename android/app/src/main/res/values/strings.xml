@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">MTG Deck Builder</string>
-    <string name="title_activity_main">MTG Deck Builder</string>
-    <string name="package_name">com.mtgdeckbuilder.app</string>
-    <string name="custom_url_scheme">com.mtgdeckbuilder.app</string>
-</resources>
