@@ -220,23 +220,72 @@ export const searchCards = async (query: string) => {
   if (!query.trim()) return [];
 
   return rateLimiter.execute(async () => {
-    const encodedQuery = encodeURIComponent(query.trim());
-    const response = await fetch(`https://api.scryfall.com/cards/search?q=${encodedQuery}&order=name`, {
-      headers: {
-        'User-Agent': 'MTG-Deck-Builder/1.0 (Replit Application)'
-      }
-    });
+    const cleanQuery = query.trim().toLowerCase();
     
-    if (!response.ok) {
-      if (response.status === 404) return [];
-      if (response.status === 429) {
-        throw new Error('429: Rate limit exceeded');
+    // First try exact name search for better accuracy
+    let searchQueries = [
+      `!"${cleanQuery}"`, // Exact name match (highest priority)
+      `name:"${cleanQuery}"`, // Name field exact match
+      cleanQuery // Fallback to general search
+    ];
+    
+    let allResults: any[] = [];
+    
+    // Try each search query in order of preference
+    for (const searchQuery of searchQueries) {
+      try {
+        const encodedQuery = encodeURIComponent(searchQuery);
+        const response = await fetch(`https://api.scryfall.com/cards/search?q=${encodedQuery}&order=name&unique=names`, {
+          headers: {
+            'User-Agent': 'MTG-Deck-Builder/1.0 (Replit Application)'
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          const results = data.data || [];
+          
+          if (results.length > 0) {
+            allResults = results;
+            break; // Stop at first successful search that returns results
+          }
+        }
+      } catch (error) {
+        // Continue to next search query if this one fails
+        continue;
       }
-      throw new Error(`Search failed: ${response.statusText}`);
+    }
+    
+    if (allResults.length === 0) {
+      return [];
     }
 
-    const data = await response.json();
-    return data.data?.map((card: any) => scryfallCardSchema.parse(card)) || [];
+    // Parse and sort results for better accuracy
+    const parsedResults = allResults.map((card: any) => scryfallCardSchema.parse(card));
+    
+    // Sort results by relevance to improve accuracy
+    return parsedResults.sort((a, b) => {
+      const aName = a.name.toLowerCase();
+      const bName = b.name.toLowerCase();
+      
+      // Exact matches first
+      if (aName === cleanQuery && bName !== cleanQuery) return -1;
+      if (bName === cleanQuery && aName !== cleanQuery) return 1;
+      
+      // Names that start with the query
+      const aStarts = aName.startsWith(cleanQuery);
+      const bStarts = bName.startsWith(cleanQuery);
+      if (aStarts && !bStarts) return -1;
+      if (bStarts && !aStarts) return 1;
+      
+      // Shorter names are generally more relevant
+      if (aStarts && bStarts) {
+        return aName.length - bName.length;
+      }
+      
+      // Default alphabetical sorting
+      return aName.localeCompare(bName);
+    });
   });
 };
 
