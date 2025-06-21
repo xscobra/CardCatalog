@@ -107,22 +107,15 @@ export function PulledCardsSection({
                   <CardRow
                     key={card.id}
                     card={card}
-                    onRemove={() => {
-                      if (onMoveToDeck) {
-                        onMoveToDeck(card);
-                      }
-                      onRemovePulledCard(card.id);
-                    }}
+                    onRemove={() => onRemovePulledCard(card.id)}
                     onCardClick={() => setSelectedCard(card)}
                     onSetClick={() => setSelectedCard(card)}
                     onPull={() => {
                       if (onMoveToDeck) {
                         onMoveToDeck(card);
                       }
-                      onRemovePulledCard(card.id);
                     }}
                     isPulled={true}
-                    onPermanentRemove={() => onRemovePulledCard(card.id)}
                   />
                 ))
               )}

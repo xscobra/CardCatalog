@@ -71,13 +71,12 @@ export function DeckList({
               <CardRow
                 key={`deck-${card.id}`}
                 card={card}
-                onRemove={() => handleCardPull(card)}
+                onRemove={() => handleCardMove(card, true)}
                 onCardClick={() => setSelectedCard(card)}
                 onPull={() => handleCardPull(card)}
                 onSetClick={() => {}}
                 format={format}
                 onPriceUpdate={onPriceUpdate}
-                onPermanentRemove={() => handleCardMove(card, true)}
               />
             ))}
           </ScrollArea>
