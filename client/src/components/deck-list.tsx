@@ -71,12 +71,13 @@ export function DeckList({
               <CardRow
                 key={`deck-${card.id}`}
                 card={card}
-                onRemove={() => handleCardMove(card, true)}
+                onRemove={() => handleCardPull(card)}
                 onCardClick={() => setSelectedCard(card)}
                 onPull={() => handleCardPull(card)}
                 onSetClick={() => {}}
                 format={format}
                 onPriceUpdate={onPriceUpdate}
+                onPermanentRemove={() => handleCardMove(card, true)}
               />
             ))}
           </ScrollArea>
@@ -88,6 +89,7 @@ export function DeckList({
             pulledCards={pulledCards}
             onUpdatePulledCard={onUpdatePulledCard}
             onRemovePulledCard={onRemovePulledCard}
+            onMoveToDeck={(card) => onCardMove(card, false)}
           />
         </div>
 
@@ -111,7 +113,7 @@ export function DeckList({
                 <CardRow
                   key={`deck-${card.id}`}
                   card={card}
-                  onRemove={() => handleCardMove(card, false)}
+                  onRemove={() => handleCardMove(card, true)}
                   onCardClick={() => setSelectedCard(card)}
                   onPull={() => handleCardPull(card)}
                   onSetClick={() => {}}
@@ -128,17 +130,22 @@ export function DeckList({
                 <CardRow
                   key={`pulled-${card.id}`}
                   card={card}
-                  onRemove={() => onRemovePulledCard(card.id)}
+                  onRemove={() => {
+                    // Move back to deck via swipe
+                    onCardMove(card, false);
+                    onRemovePulledCard(card.id);
+                  }}
                   onCardClick={() => setSelectedCard(card)}
                   onSetClick={() => {}}
                   format={format}
                   onPriceUpdate={onPriceUpdate}
                   onPull={() => {
-                    // Move back to deck
+                    // Move back to deck via swipe
                     onCardMove(card, false);
                     onRemovePulledCard(card.id);
                   }}
                   isPulled={true}
+                  onPermanentRemove={() => handleCardMove(card, true)}
                 />
               ))}
             </ScrollArea>
