@@ -292,14 +292,14 @@ export default function DeckPage() {
   const { tcgplayer: totalTcg, cardkingdom: totalCk } = calculateTotalPrices();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 border-b pb-4">
             <Button 
               variant="ghost" 
               onClick={() => setLocation("/")}
-              className="p-2 hover:bg-primary/10 hover:text-primary transition-colors"
+              className="p-2"
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
@@ -308,7 +308,7 @@ export default function DeckPage() {
                 placeholder="Deck Name"
                 value={name}
                 onChange={handleNameChange}
-                className="text-xl sm:text-2xl font-bold border-0 bg-transparent focus:bg-card/50 transition-all shadow-none focus:shadow-md"
+                className="text-xl sm:text-2xl font-bold border-0 bg-transparent"
               />
             </div>
             <div className="flex items-center gap-2">
@@ -316,8 +316,8 @@ export default function DeckPage() {
               {id !== "new" && (
                 <Button
                   variant="destructive"
+                  size="sm"
                   onClick={() => setShowDeleteDialog(true)}
-                  className="p-2 hover:shadow-lg transition-shadow"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -330,16 +330,18 @@ export default function DeckPage() {
             <Button 
               onClick={handleExportClick} 
               disabled={!deck} 
-              className="w-full sm:w-auto shadow-md hover:shadow-lg transition-shadow"
+              className="w-full sm:w-auto"
               variant="outline"
+              size="sm"
             >
               <Download className="mr-2 h-4 w-4" />
               Export
             </Button>
             <Button 
               onClick={() => setShowImportDialog(true)} 
-              className="w-full sm:w-auto shadow-md hover:shadow-lg transition-shadow"
+              className="w-full sm:w-auto"
               variant="outline"
+              size="sm"
             >
               <Upload className="mr-2 h-4 w-4" />
               Import
@@ -347,10 +349,10 @@ export default function DeckPage() {
           </div>
 
 
+          </div>
         </div>
-      </div>
 
-      <div className="mt-8 grid gap-8 grid-cols-1 lg:grid-cols-2">
+        <div className="mt-8 grid gap-8 grid-cols-1 lg:grid-cols-2">
         <div className="order-2 lg:order-1">
           <CardSearch
             onCardSelect={handleCardSelect}
@@ -408,6 +410,7 @@ export default function DeckPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      </div>
     </div>
   );
 }
