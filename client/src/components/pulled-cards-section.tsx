@@ -122,6 +122,7 @@ export function PulledCardsSection({
                       onRemovePulledCard(card.id);
                     }}
                     isPulled={true}
+                    onPermanentRemove={() => onRemovePulledCard(card.id)}
                   />
                 ))
               )}

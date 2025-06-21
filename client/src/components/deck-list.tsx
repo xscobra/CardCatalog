@@ -71,12 +71,13 @@ export function DeckList({
               <CardRow
                 key={`deck-${card.id}`}
                 card={card}
-                onRemove={() => handleCardMove(card, true)}
+                onRemove={() => handleCardPull(card)}
                 onCardClick={() => setSelectedCard(card)}
                 onPull={() => handleCardPull(card)}
                 onSetClick={() => {}}
                 format={format}
                 onPriceUpdate={onPriceUpdate}
+                onPermanentRemove={() => handleCardMove(card, true)}
               />
             ))}
           </ScrollArea>
@@ -130,7 +131,7 @@ export function DeckList({
                   key={`pulled-${card.id}`}
                   card={card}
                   onRemove={() => {
-                    // Move back to deck
+                    // Move back to deck via swipe
                     onCardMove(card, false);
                     onRemovePulledCard(card.id);
                   }}
@@ -139,11 +140,12 @@ export function DeckList({
                   format={format}
                   onPriceUpdate={onPriceUpdate}
                   onPull={() => {
-                    // Move back to deck
+                    // Move back to deck via swipe
                     onCardMove(card, false);
                     onRemovePulledCard(card.id);
                   }}
                   isPulled={true}
+                  onPermanentRemove={() => handleCardMove(card, true)}
                 />
               ))}
             </ScrollArea>

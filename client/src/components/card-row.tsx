@@ -36,6 +36,7 @@ interface CardRowProps {
   format?: string;
   onPriceUpdate?: (cardId: string, newPrices: { tcgplayer: number | null; cardkingdom: number | null }) => void;
   isPulled?: boolean;
+  onPermanentRemove?: () => void;
 }
 
 export function CardRow({ 
@@ -46,7 +47,8 @@ export function CardRow({
   onPull,
   format,
   onPriceUpdate,
-  isPulled = false
+  isPulled = false,
+  onPermanentRemove
 }: CardRowProps) {
   const [showPrintings, setShowPrintings] = useState(false);
   const [showImage, setShowImage] = useState(false);
@@ -284,7 +286,7 @@ export function CardRow({
                     <DropdownMenuItem onClick={() => setShowPriceAlert(true)} className="py-3">
                       <Bell className="mr-2 h-5 w-5" /> Set Price Alert
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={onRemove} className="text-destructive py-3">
+                    <DropdownMenuItem onClick={onPermanentRemove || onRemove} className="text-destructive py-3">
                       Remove
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -351,7 +353,7 @@ export function CardRow({
                   </Tooltip>
                 </div>
 
-                <Button variant="destructive" size="lg" onClick={onRemove} className="px-6">
+                <Button variant="destructive" size="lg" onClick={onPermanentRemove || onRemove} className="px-6">
                   Remove
                 </Button>
               </div>

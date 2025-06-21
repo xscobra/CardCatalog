@@ -137,12 +137,24 @@ export default function DeckPage() {
     if (!deck) return;
 
     if (remove) {
-      // Removing card completely from deck
+      // Removing card completely from deck and pulled cards
       const updatedDeck = {
         ...deck,
-        cards: deck.cards.filter((c) => c.id !== card.id)
+        cards: deck.cards.filter((c) => c.id !== card.id),
+        pulledCards: (deck.pulledCards || []).filter((c) => c.id !== card.id)
       };
       saveDeck(updatedDeck);
+    } else {
+      // Moving card back to deck from pulled cards
+      const pulledCard = deck.pulledCards?.find(c => c.id === card.id);
+      if (pulledCard) {
+        const updatedDeck = {
+          ...deck,
+          cards: [...deck.cards, pulledCard],
+          pulledCards: (deck.pulledCards || []).filter(c => c.id !== card.id)
+        };
+        saveDeck(updatedDeck);
+      }
     }
   };
 
