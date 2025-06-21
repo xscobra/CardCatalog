@@ -4,13 +4,7 @@ import { CardSearch } from "@/components/card-search";
 import { DeckList } from "@/components/deck-list";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 import { Download, ArrowLeft, Trash2, Upload } from "lucide-react";
 import type { Deck, DeckCard } from "@shared/schema";
 import type { ScryfallCard } from "@/lib/api";
@@ -29,15 +23,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { loadDecksFromLocal, saveDecksToLocal } from "@/lib/localStorage";
 
-const FORMATS = [
-  { value: "standard", label: "Standard" },
-  { value: "modern", label: "Modern" },
-  { value: "commander", label: "Commander" },
-  { value: "pioneer", label: "Pioneer" },
-  { value: "legacy", label: "Legacy" },
-  { value: "vintage", label: "Vintage" },
-  { value: "pauper", label: "Pauper" },
-];
+
 
 export default function DeckPage() {
   const { id } = useParams();
@@ -82,12 +68,7 @@ export default function DeckPage() {
     }
   };
 
-  const handleFormatChange = (format: string) => {
-    if (deck) {
-      const updatedDeck = { ...deck, format };
-      saveDeck(updatedDeck);
-    }
-  };
+
 
   const handleDeleteDeck = () => {
     const decks = loadDecksFromLocal();
@@ -284,17 +265,21 @@ export default function DeckPage() {
     }
   };
 
-  // Calculate total prices for the deck
+  // Calculate total prices from pulled cards only
   const calculateTotalPrices = () => {
     if (!deck) return { tcgplayer: 0, cardkingdom: 0 };
 
     try {
-      const allCards = [...(deck.cards || []), ...(deck.pulledCards || [])];
-      return allCards.reduce(
-        (totals, card) => ({
-          tcgplayer: totals.tcgplayer + (card?.prices?.tcgplayer || 0),
-          cardkingdom: totals.cardkingdom + (card?.prices?.cardkingdom || 0),
-        }),
+      const pulledCards = deck.pulledCards || [];
+      return pulledCards.reduce(
+        (totals, card) => {
+          const tcgPrice = card.selectedSet?.prices?.tcgplayer || card.prices.tcgplayer || 0;
+          const ckPrice = card.selectedSet?.prices?.cardkingdom || card.prices.cardkingdom || 0;
+          return {
+            tcgplayer: totals.tcgplayer + tcgPrice,
+            cardkingdom: totals.cardkingdom + ckPrice,
+          };
+        },
         { tcgplayer: 0, cardkingdom: 0 }
       );
     } catch (error) {
@@ -347,23 +332,7 @@ export default function DeckPage() {
             </Button>
           </div>
 
-          {deck && (
-            <Select
-              value={deck.format || ""}
-              onValueChange={handleFormatChange}
-            >
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Select Format" />
-              </SelectTrigger>
-              <SelectContent>
-                {FORMATS.map(({ value, label }) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+
         </div>
       </div>
 
