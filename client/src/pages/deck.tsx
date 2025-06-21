@@ -203,23 +203,30 @@ export default function DeckPage() {
   const handlePriceUpdate = (cardId: string, newPrices: { tcgplayer: number | null; cardkingdom: number | null }) => {
     if (!deck) return;
 
-    const updateCardInList = (list: DeckCard[]) =>
-      list.map((card) =>
-        card.id === cardId
-          ? { ...card, prices: newPrices }
-          : card
-      );
+    try {
+      const updateCardInList = (list: DeckCard[]) =>
+        list.map((card) =>
+          card.id === cardId
+            ? { ...card, prices: newPrices }
+            : card
+        );
 
-    const newCards = updateCardInList(deck.cards);
-    const newPickedUpCards = updateCardInList(deck.pickedUpCards);
+      const newCards = updateCardInList(deck.cards || []);
+      const newPulledCards = updateCardInList(deck.pulledCards || []);
 
-    if (JSON.stringify([...newCards, ...newPickedUpCards]) !== JSON.stringify([...deck.cards, ...deck.pickedUpCards])) {
       const updatedDeck = {
         ...deck,
         cards: newCards,
-        pickedUpCards: newPickedUpCards
+        pulledCards: newPulledCards
       };
       saveDeck(updatedDeck);
+    } catch (error) {
+      console.error('Error updating prices:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update card prices",
+        variant: "destructive",
+      });
     }
   };
 
@@ -281,13 +288,19 @@ export default function DeckPage() {
   const calculateTotalPrices = () => {
     if (!deck) return { tcgplayer: 0, cardkingdom: 0 };
 
-    return [...deck.cards, ...deck.pickedUpCards].reduce(
-      (totals, card) => ({
-        tcgplayer: totals.tcgplayer + (card.prices.tcgplayer || 0),
-        cardkingdom: totals.cardkingdom + (card.prices.cardkingdom || 0),
-      }),
-      { tcgplayer: 0, cardkingdom: 0 }
-    );
+    try {
+      const allCards = [...(deck.cards || []), ...(deck.pulledCards || [])];
+      return allCards.reduce(
+        (totals, card) => ({
+          tcgplayer: totals.tcgplayer + (card?.prices?.tcgplayer || 0),
+          cardkingdom: totals.cardkingdom + (card?.prices?.cardkingdom || 0),
+        }),
+        { tcgplayer: 0, cardkingdom: 0 }
+      );
+    } catch (error) {
+      console.error('Error calculating total prices:', error);
+      return { tcgplayer: 0, cardkingdom: 0 };
+    }
   };
 
   const { tcgplayer: totalTcg, cardkingdom: totalCk } = calculateTotalPrices();
