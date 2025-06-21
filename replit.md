@@ -128,6 +128,7 @@ This is a comprehensive Magic: The Gathering deck building application built wit
 - June 21, 2025: Disabled drag/swipe card removal - cards now only removed via explicit button clicks
 - June 21, 2025: Fixed "Move to Deck" functionality that was incorrectly deleting cards
 - June 21, 2025: Enhanced card search accuracy with exact name matching and improved result sorting
+- June 21, 2025: Created comprehensive README.md with full project documentation
 
 ## User Preferences
 
