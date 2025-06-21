@@ -126,4 +126,4 @@ This is a comprehensive Magic: The Gathering deck building application built wit
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
-Preferred design style: Utilitarian, clean, and functional interface without fancy effects.
+Preferred design style: Utilitarian, clean, and functional interface without fancy effects or rounded corners.
