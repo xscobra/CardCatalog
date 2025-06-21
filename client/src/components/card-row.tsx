@@ -34,6 +34,7 @@ interface CardRowProps {
   onPull?: () => void;
   format?: string;
   onPriceUpdate?: (cardId: string, newPrices: { tcgplayer: number | null; cardkingdom: number | null }) => void;
+  isPulled?: boolean;
 }
 
 export function CardRow({ 

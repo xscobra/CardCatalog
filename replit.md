@@ -122,6 +122,7 @@ This is a comprehensive Magic: The Gathering deck building application built wit
 - June 20, 2025: Simplified deck import to Moxfield URLs only and added .txt file upload support
 - June 21, 2025: Updated price totals to reflect only pulled cards value and removed format dropdown
 - June 21, 2025: Simplified UI to utilitarian design with clean, functional interface and dark/light mode toggle
+- June 21, 2025: Added ability to move pulled cards back to deck with right swipe gesture or button
 
 ## User Preferences
 
