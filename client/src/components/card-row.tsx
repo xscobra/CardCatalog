@@ -79,11 +79,8 @@ export function CardRow({
   const handleDragEnd = (_: any, info: PanInfo) => {
     const threshold = 100;
 
-    if (info.offset.x < -threshold) {
-      // Left swipe triggers remove
-      onRemove();
-    } else if (info.offset.x > threshold && onPull) {
-      // Right swipe behavior depends on card state
+    if (info.offset.x < -threshold && onPull) {
+      // Left swipe - move to pulled cards (deck) or back to deck (pulled)
       onPull();
     }
     setIsDragging(false);
@@ -112,14 +109,8 @@ export function CardRow({
     const deltaX = currentX.current - startX.current;
 
     // Trigger action on significant left swipe
-    if (deltaX < -50) {
-      if (isPulled) {
-        // If it's a pulled card, move it back to deck
-        onRemove();
-      } else {
-        // If it's a deck card, pull it
-        onPull?.();
-      }
+    if (deltaX < -50 && onPull) {
+      onPull();
     }
 
     setSwipeOffset(0);
@@ -150,14 +141,8 @@ export function CardRow({
     const deltaX = currentX.current - startX.current;
 
     // Trigger action on significant left swipe
-    if (deltaX < -50) {
-      if (isPulled) {
-        // If it's a pulled card, move it back to deck
-        onRemove();
-      } else {
-        // If it's a deck card, pull it
-        onPull?.();
-      }
+    if (deltaX < -50 && onPull) {
+      onPull();
     }
 
     setSwipeOffset(0);
@@ -180,12 +165,8 @@ export function CardRow({
       if (isDragging) {
         const deltaX = currentX.current - startX.current;
 
-        if (deltaX < -50) {
-          if (isPulled) {
-            onRemove();
-          } else {
-            onPull?.();
-          }
+        if (deltaX < -50 && onPull) {
+          onPull();
         }
 
         setSwipeOffset(0);
@@ -229,7 +210,7 @@ export function CardRow({
               )}
               style={{ 
                 transform: `translateX(${swipeOffset}px)`,
-                backgroundColor: swipeOffset < -25 ? (isPulled ? '#dcfce7' : '#fef3c7') : undefined
+                backgroundColor: swipeOffset < -25 ? (isPulled ? '#dcfce7' : '#e0f2fe') : undefined
               }}
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}

@@ -112,7 +112,7 @@ export function DeckList({
                 <CardRow
                   key={`deck-${card.id}`}
                   card={card}
-                  onRemove={() => handleCardMove(card, false)}
+                  onRemove={() => handleCardMove(card, true)}
                   onCardClick={() => setSelectedCard(card)}
                   onPull={() => handleCardPull(card)}
                   onSetClick={() => {}}
