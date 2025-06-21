@@ -347,10 +347,10 @@ export default function DeckPage() {
           </div>
 
 
+          </div>
         </div>
-      </div>
 
-      <div className="mt-8 grid gap-8 grid-cols-1 lg:grid-cols-2">
+        <div className="mt-8 grid gap-8 grid-cols-1 lg:grid-cols-2">
         <div className="order-2 lg:order-1">
           <CardSearch
             onCardSelect={handleCardSelect}
