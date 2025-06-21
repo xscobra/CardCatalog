@@ -34,7 +34,6 @@ interface CardRowProps {
   onPull?: () => void;
   format?: string;
   onPriceUpdate?: (cardId: string, newPrices: { tcgplayer: number | null; cardkingdom: number | null }) => void;
-  isPulled?: boolean;
 }
 
 export function CardRow({ 
@@ -71,14 +70,15 @@ export function CardRow({
   };
 
   const handleDragEnd = (_: any, info: PanInfo) => {
-    const threshold = 100;
+    const threshold = 150;
+    const pullThreshold = 300;
     
-    if (info.offset.x < -threshold) {
-      // Left swipe triggers remove
-      onRemove();
-    } else if (info.offset.x > threshold && onPull) {
-      // Right swipe behavior depends on card state
+    if (Math.abs(info.offset.x) > pullThreshold && onPull) {
+      // Far swipe triggers pull
       onPull();
+    } else if (Math.abs(info.offset.x) > threshold) {
+      // Regular swipe triggers remove
+      onRemove();
     }
     setIsDragging(false);
   };
@@ -96,8 +96,8 @@ export function CardRow({
       exit={{ opacity: 0 }}
       whileTap={{ scale: 0.98 }}
     >
-      <Card className="mb-4 hover:shadow-sm transition-shadow">
-        <CardContent className="p-4">
+      <Card className="mb-4">
+        <CardContent className="p-6">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             {/* Card Info Section */}
             <div className="flex items-center gap-4 min-w-0" onClick={() => !isDragging && onCardClick()}>

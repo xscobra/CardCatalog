@@ -123,25 +123,11 @@ export function DeckList({
           </TabsContent>
 
           <TabsContent value="pulled" className="mt-4">
-            <ScrollArea className="h-[60vh] sm:h-[calc(100vh-16rem)] px-1">
-              {pulledCards.map((card) => (
-                <CardRow
-                  key={`pulled-${card.id}`}
-                  card={card}
-                  onRemove={() => onRemovePulledCard(card.id)}
-                  onCardClick={() => setSelectedCard(card)}
-                  onSetClick={() => {}}
-                  format={format}
-                  onPriceUpdate={onPriceUpdate}
-                  onPull={() => {
-                    // Move back to deck
-                    onCardMove(card, false);
-                    onRemovePulledCard(card.id);
-                  }}
-                  isPulled={true}
-                />
-              ))}
-            </ScrollArea>
+            <PulledCardsSection
+              pulledCards={pulledCards}
+              onUpdatePulledCard={onUpdatePulledCard}
+              onRemovePulledCard={onRemovePulledCard}
+            />
           </TabsContent>
         </Tabs>
 
