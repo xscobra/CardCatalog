@@ -95,20 +95,20 @@ export default function Home() {
         </div>
       </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {decks.map((deck) => (
-            <Card key={deck.id} className="h-full hover:shadow-lg transition-all duration-200 hover:scale-[1.02] group border-0 shadow-md bg-card/50 backdrop-blur-sm">
+            <Card key={deck.id} className="h-full hover:shadow-sm transition-shadow">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
-                    <CardTitle className="text-lg truncate group-hover:text-primary transition-colors">
+                    <CardTitle className="text-lg truncate">
                       {deck.name}
                     </CardTitle>
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 hover:text-destructive"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
                     onClick={(e) => {
                       e.preventDefault();
                       setDeckToDelete(deck);
@@ -120,15 +120,15 @@ export default function Home() {
               </CardHeader>
               <CardContent className="pt-0">
                 <Link href={`/deck/${deck.id}`}>
-                  <div className="space-y-3 cursor-pointer">
-                    <div className="flex justify-between text-sm p-2 rounded-lg bg-muted/30">
+                  <div className="space-y-2 cursor-pointer">
+                    <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Cards:</span>
                       <span className="font-medium">{deck.cards?.length || 0}</span>
                     </div>
                     {deck.pulledCards && deck.pulledCards.length > 0 && (
-                      <div className="flex justify-between text-sm p-2 rounded-lg bg-green-500/10">
+                      <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Pulled:</span>
-                        <span className="font-medium text-green-600 dark:text-green-400">{deck.pulledCards.length}</span>
+                        <span className="font-medium">{deck.pulledCards.length}</span>
                       </div>
                     )}
                   </div>
