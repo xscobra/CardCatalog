@@ -117,7 +117,10 @@ export function DeckImportDialog({
 
           // Add multiple copies based on quantity
           for (let i = 0; i < quantity; i++) {
-            importedCards.push({ ...deckCard, id: `${card.id}-${Date.now()}-${i}` });
+            importedCards.push({ 
+              ...deckCard, 
+              id: `${card.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${i}` 
+            });
           }
         } catch (error) {
           errors.push(`Error importing ${name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -127,16 +130,27 @@ export function DeckImportDialog({
       setImportErrors(errors);
 
       if (importedCards.length > 0) {
-        onImport(deckName.trim(), importedCards);
-        toast({
-          title: "Import Successful",
-          description: `Imported ${importedCards.length} cards${errors.length > 0 ? ` with ${errors.length} errors` : ''}`,
-        });
-        
-        // Reset form
-        setDeckName("");
-        setCardList("");
-        onOpenChange(false);
+        try {
+          onImport(deckName.trim(), importedCards);
+          
+          toast({
+            title: "Import Successful",
+            description: `Imported ${importedCards.length} cards${errors.length > 0 ? ` with ${errors.length} errors` : ''}`,
+          });
+          
+          // Reset form
+          setDeckName("");
+          setCardList("");
+          setImportErrors([]);
+          onOpenChange(false);
+        } catch (error) {
+          console.error('Import callback error:', error);
+          toast({
+            title: "Import Error",
+            description: error instanceof Error ? error.message : "Failed to import cards",
+            variant: "destructive",
+          });
+        }
       } else {
         toast({
           title: "Import Failed",

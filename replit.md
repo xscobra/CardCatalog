@@ -118,6 +118,7 @@ This is a comprehensive Magic: The Gathering deck building application built wit
 - June 20, 2025: Enhanced Card Search to allow duplicate cards with different sets for price comparison
 - June 20, 2025: Optimized API usage with intelligent caching, request deduplication, and reduced call frequency
 - June 20, 2025: Implemented strict Scryfall rate limiting (8 req/sec max, 125ms delays) to prevent API bans
+- June 20, 2025: Fixed deck import functionality with proper error handling and state management
 
 ## User Preferences
 

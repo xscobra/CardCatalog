@@ -46,6 +46,7 @@ export default function DeckPage() {
   const [deck, setDeck] = useState<Deck | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -228,33 +229,52 @@ export default function DeckPage() {
   };
 
   const handleImportCards = (deckName: string, cards: DeckCard[]) => {
-    if (!deck) {
-      // Create new deck if none exists
-      const decks = loadDecksFromLocal();
-      const newDeck: Deck = {
-        id: Date.now(),
-        name: deckName,
-        format: null,
-        description: null,
-        cards: cards,
-        pulledCards: [],
-      };
-      saveDeck(newDeck);
-      setName(deckName);
-      setLocation(`/deck/${newDeck.id}`);
-    } else {
-      // Add cards to existing deck
-      const updatedDeck = {
-        ...deck,
-        cards: [...deck.cards, ...cards]
-      };
-      saveDeck(updatedDeck);
+    try {
+      if (!deck) {
+        // Create new deck if none exists
+        const decks = loadDecksFromLocal();
+        const newDeck: Deck = {
+          id: Date.now(),
+          name: deckName,
+          format: null,
+          description: null,
+          cards: cards,
+          pulledCards: [],
+        };
+        saveDeck(newDeck);
+        setName(deckName);
+        setDeck(newDeck);
+        
+        // Don't navigate if we're already on a new deck page
+        if (id === "new") {
+          // Update the URL to reflect the new deck ID
+          setLocation(`/deck/${newDeck.id}`);
+        }
+      } else {
+        // Add cards to existing deck
+        const updatedDeck = {
+          ...deck,
+          cards: [...deck.cards, ...cards]
+        };
+        saveDeck(updatedDeck);
+        setDeck(updatedDeck);
+      }
+      
+      toast({
+        title: "Cards Imported",
+        description: `Successfully imported ${cards.length} cards`,
+      });
+      
+      // Close the import dialog
+      setShowImportDialog(false);
+    } catch (error) {
+      console.error('Import error:', error);
+      toast({
+        title: "Import Error",
+        description: "Failed to import cards. Please try again.",
+        variant: "destructive",
+      });
     }
-    
-    toast({
-      title: "Cards Imported",
-      description: `Successfully imported ${cards.length} cards`,
-    });
   };
 
   // Calculate total prices for the deck
