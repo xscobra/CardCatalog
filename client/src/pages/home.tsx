@@ -24,6 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { loadDecksFromLocal, saveDecksToLocal } from "@/lib/localStorage";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function Home() {
   const [decks, setDecks] = useState<Deck[]>([]);
@@ -94,33 +95,48 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-        {decks.map((deck) => (
-          <Card key={deck.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle>{deck.name}</CardTitle>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setDeckToDelete(deck);
-                }}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <Link href={`/deck/${deck.id}`}>
-                <p className="text-sm text-muted-foreground">
-                  {deck.cards.length} cards ({deck.pulledCards?.length || 0} pulled)
-                </p>
-              </Link>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {decks.map((deck) => (
+            <Card key={deck.id} className="h-full hover:shadow-sm transition-shadow">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-lg truncate">
+                      {deck.name}
+                    </CardTitle>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setDeckToDelete(deck);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <Link href={`/deck/${deck.id}`}>
+                  <div className="space-y-2 cursor-pointer">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Cards:</span>
+                      <span className="font-medium">{deck.cards?.length || 0}</span>
+                    </div>
+                    {deck.pulledCards && deck.pulledCards.length > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Pulled:</span>
+                        <span className="font-medium">{deck.pulledCards.length}</span>
+                      </div>
+                    )}
+                  </div>
+                </Link>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
       <CardSearchSection />
 
