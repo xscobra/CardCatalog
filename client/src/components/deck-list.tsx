@@ -88,6 +88,7 @@ export function DeckList({
             pulledCards={pulledCards}
             onUpdatePulledCard={onUpdatePulledCard}
             onRemovePulledCard={onRemovePulledCard}
+            onMoveToDeck={(card) => onCardMove(card, false)}
           />
         </div>
 
@@ -128,7 +129,11 @@ export function DeckList({
                 <CardRow
                   key={`pulled-${card.id}`}
                   card={card}
-                  onRemove={() => onRemovePulledCard(card.id)}
+                  onRemove={() => {
+                    // Move back to deck
+                    onCardMove(card, false);
+                    onRemovePulledCard(card.id);
+                  }}
                   onCardClick={() => setSelectedCard(card)}
                   onSetClick={() => {}}
                   format={format}

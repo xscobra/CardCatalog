@@ -2,7 +2,7 @@ import { DeckCard } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { motion, PanInfo } from "framer-motion";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { PrintingsDialog } from "./printings-dialog";
 import { SetSymbolsDialog } from "./set-symbols-dialog";
 import { PriceHistoryDialog } from "./price-history-dialog";
@@ -25,6 +25,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 interface CardRowProps {
   card: DeckCard;
@@ -44,7 +45,8 @@ export function CardRow({
   onCardClick,
   onPull,
   format,
-  onPriceUpdate 
+  onPriceUpdate,
+  isPulled = false
 }: CardRowProps) {
   const [showPrintings, setShowPrintings] = useState(false);
   const [showImage, setShowImage] = useState(false);
@@ -53,6 +55,10 @@ export function CardRow({
   const [showPriceAlert, setShowPriceAlert] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [selectedPrices, setSelectedPrices] = useState(card.prices);
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const startX = useRef(0);
+  const currentX = useRef(0);
 
   const { data: metadata } = useQuery({
     queryKey: ["/api/cards/metadata", card.id],
@@ -72,7 +78,7 @@ export function CardRow({
 
   const handleDragEnd = (_: any, info: PanInfo) => {
     const threshold = 100;
-    
+
     if (info.offset.x < -threshold) {
       // Left swipe triggers remove
       onRemove();
@@ -82,6 +88,121 @@ export function CardRow({
     }
     setIsDragging(false);
   };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    startX.current = e.touches[0].clientX;
+    setIsDragging(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) return;
+
+    currentX.current = e.touches[0].clientX;
+    const deltaX = currentX.current - startX.current;
+
+    // Only allow left swipes
+    if (deltaX < 0) {
+      setSwipeOffset(Math.max(deltaX, -100));
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (!isDragging) return;
+
+    const deltaX = currentX.current - startX.current;
+
+    // Trigger action on significant left swipe
+    if (deltaX < -50) {
+      if (isPulled) {
+        // If it's a pulled card, move it back to deck
+        onRemove();
+      } else {
+        // If it's a deck card, pull it
+        onPull?.();
+      }
+    }
+
+    setSwipeOffset(0);
+    setIsDragging(false);
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    startX.current = e.clientX;
+    setIsDragging(true);
+    e.preventDefault();
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+
+    currentX.current = e.clientX;
+    const deltaX = currentX.current - startX.current;
+
+    // Only allow left swipes
+    if (deltaX < 0) {
+      setSwipeOffset(Math.max(deltaX, -100));
+    }
+  };
+
+  const handleMouseUp = () => {
+    if (!isDragging) return;
+
+    const deltaX = currentX.current - startX.current;
+
+    // Trigger action on significant left swipe
+    if (deltaX < -50) {
+      if (isPulled) {
+        // If it's a pulled card, move it back to deck
+        onRemove();
+      } else {
+        // If it's a deck card, pull it
+        onPull?.();
+      }
+    }
+
+    setSwipeOffset(0);
+    setIsDragging(false);
+  };
+
+  useEffect(() => {
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (isDragging) {
+        currentX.current = e.clientX;
+        const deltaX = currentX.current - startX.current;
+
+        if (deltaX < 0) {
+          setSwipeOffset(Math.max(deltaX, -100));
+        }
+      }
+    };
+
+    const handleGlobalMouseUp = () => {
+      if (isDragging) {
+        const deltaX = currentX.current - startX.current;
+
+        if (deltaX < -50) {
+          if (isPulled) {
+            onRemove();
+          } else {
+            onPull?.();
+          }
+        }
+
+        setSwipeOffset(0);
+        setIsDragging(false);
+      }
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleGlobalMouseMove);
+      document.addEventListener('mouseup', handleGlobalMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleGlobalMouseMove);
+      document.removeEventListener('mouseup', handleGlobalMouseUp);
+    };
+  }, [isDragging, isPulled, onRemove, onPull]);
 
   return (
     <motion.div
@@ -100,6 +221,23 @@ export function CardRow({
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             {/* Card Info Section */}
+             <div
+              ref={cardRef}
+              className={cn(
+                "flex items-center gap-3 p-3 border-b hover:bg-muted/50 last:border-b-0 transition-transform",
+                isDragging && "select-none"
+              )}
+              style={{ 
+                transform: `translateX(${swipeOffset}px)`,
+                backgroundColor: swipeOffset < -25 ? (isPulled ? '#dcfce7' : '#fef3c7') : undefined
+              }}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+            >
             <div className="flex items-center gap-4 min-w-0" onClick={() => !isDragging && onCardClick()}>
               {card.imageUrl && (
                 <img
@@ -139,6 +277,7 @@ export function CardRow({
                   )}
                 </div>
               </div>
+            </div>
             </div>
 
             {/* Actions Section */}

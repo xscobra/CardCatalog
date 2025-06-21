@@ -22,17 +22,20 @@ import { getCardPrints, getCardImageUrl } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, DollarSign, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { CardRow } from "./card-row";
 
 interface PulledCardsSectionProps {
   pulledCards: DeckCard[];
   onUpdatePulledCard: (cardId: string, selectedSet: DeckCard["selectedSet"]) => void;
   onRemovePulledCard: (cardId: string) => void;
+  onMoveToDeck?: (card: DeckCard) => void;
 }
 
 export function PulledCardsSection({
   pulledCards,
   onUpdatePulledCard,
   onRemovePulledCard,
+  onMoveToDeck,
 }: PulledCardsSectionProps) {
   const [selectedCard, setSelectedCard] = useState<DeckCard | null>(null);
   const { toast } = useToast();
@@ -101,44 +104,25 @@ export function PulledCardsSection({
                 </p>
               ) : (
                 pulledCards.map((card) => (
-                  <div
+                  <CardRow
                     key={card.id}
-                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50"
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{card.name}</span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedCard(card)}
-                          className="h-6 px-2 text-xs"
-                        >
-                          <DollarSign className="h-3 w-3 mr-1" />
-                          Set Prices
-                        </Button>
-                      </div>
-                      {card.selectedSet && (
-                        <div className="mt-1 space-y-1">
-                          <Badge variant="secondary" className="text-xs">
-                            {card.selectedSet.name}
-                          </Badge>
-                          <div className="text-xs text-muted-foreground">
-                            TCG: ${card.selectedSet.prices.tcgplayer?.toFixed(2) || 'N/A'} | 
-                            CK: ${card.selectedSet.prices.cardkingdom?.toFixed(2) || 'N/A'}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onRemovePulledCard(card.id)}
-                      className="h-8 w-8 p-0"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
+                    card={card}
+                    onRemove={() => {
+                      if (onMoveToDeck) {
+                        onMoveToDeck(card);
+                      }
+                      onRemovePulledCard(card.id);
+                    }}
+                    onCardClick={() => setSelectedCard(card)}
+                    onSetClick={() => setSelectedCard(card)}
+                    onPull={() => {
+                      if (onMoveToDeck) {
+                        onMoveToDeck(card);
+                      }
+                      onRemovePulledCard(card.id);
+                    }}
+                    isPulled={true}
+                  />
                 ))
               )}
             </div>
