@@ -120,6 +120,7 @@ This is a comprehensive Magic: The Gathering deck building application built wit
 - June 20, 2025: Implemented strict Scryfall rate limiting (8 req/sec max, 125ms delays) to prevent API bans
 - June 20, 2025: Fixed deck import functionality with proper error handling and state management
 - June 20, 2025: Simplified deck import to Moxfield URLs only and added .txt file upload support
+- June 21, 2025: Updated price totals to reflect only pulled cards value and removed format dropdown
 
 ## User Preferences
 
